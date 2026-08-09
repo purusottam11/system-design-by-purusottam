@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>System Design by Purusottam</title>
-<meta name="description" content="A curated library of system design notes — databases, caching, scaling, messaging, microservices, cloud — with Spring Boot implementations.">
+<meta name="description" content="A curated library of system design notes — databases, caching, scaling, messaging, concurrency, microservices, cloud — with Spring Boot implementations.">
 <style>
   :root{
     --paper:#FBF8F5;
@@ -266,6 +266,17 @@
     margin-top:3px;
     line-height:1.5;
   }
+  .doc-title .badge{
+    font-family:var(--mono);
+    font-size:10px;
+    font-weight:400;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+    color:var(--green);
+    background:var(--green-soft);
+    padding:2px 8px;
+    border-radius:20px;
+  }
 
   .empty-cat{
     padding:14px 0 6px;
@@ -344,9 +355,9 @@
   <h1><b>System Design</b> by Purusottam</h1>
   <p class="sub">A growing collection of deep-dive notes on the concepts real backend systems are built on — from database internals to distributed messaging — each paired with a hands-on Spring Boot implementation.</p>
   <div class="meta">
-    <span>Updated <b>July 2026</b></span>
+    <span>Updated <b>August 2026</b></span>
     <span><b id="stat-cats">9</b> categories</span>
-    <span><b id="stat-docs">10</b> guides · more soon</span>
+    <span><b id="stat-docs">11</b> guides · more soon</span>
   </div>
 </div></header>
 
@@ -357,7 +368,7 @@
       <circle cx="11" cy="11" r="7"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
-    <input id="searchInput" type="text" placeholder="Search for a topic — Kafka, MongoDB, transactions, sharding…" autocomplete="off" spellcheck="false">
+    <input id="searchInput" type="text" placeholder="Search for a topic — Kafka, MongoDB, virtual threads, sharding…" autocomplete="off" spellcheck="false">
   </div>
 
   <div class="controls">
@@ -469,18 +480,24 @@
     </div>
 
     <!-- ============ CONCURRENCY ============ -->
-    <div class="cat" data-name="Concurrency" data-keywords="concurrency threads locks synchronization race conditions parallelism">
+    <div class="cat" data-name="Concurrency" data-keywords="concurrency threads locks synchronization race conditions parallelism multithreading multiprocessing virtual threads java 21 platform threads carrier thread executorservice thread pool deadlock livelock starvation volatile atomic cas compare and swap jmm happens-before memory model context switch false sharing cpu cache cores forkjoin structured concurrency pinning instagram flipkart uber tinder phonepe hotstar bookmyshow">
       <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
         <div class="icon conc">∞</div>
         <div class="cat-title">
           <h2>Concurrency</h2>
           <p>Threads, locks, atomics, race conditions, and the JVM concurrency primitives every backend engineer runs into.</p>
         </div>
-        <span class="cat-count">Coming soon</span>
+        <span class="cat-count">1 guide</span>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
-        <div class="empty-cat">Guides for this area are on the way. <span>WIP</span></div>
+        <a class="doc" href="https://purusottam11.github.io/multithreading/" target="_blank" rel="noopener">
+          <div class="dot"></div>
+          <div class="doc-body">
+            <div class="doc-title">Multithreading, Visually — from CPU Cores to Virtual Threads <span class="arrow">→</span> <span class="badge">New</span></div>
+            <div class="doc-desc">28 chapters, concept-first then Java 21 — cores and context switching, race conditions, locks, the memory model, deadlock, thread pools, and virtual threads with pinning — taught through Instagram, Flipkart, Uber, PhonePe and Hotstar, with interactive widgets and 25 diagrams.</div>
+          </div>
+        </a>
       </div></div>
     </div>
 

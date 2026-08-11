@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,464 +7,445 @@
 <meta name="description" content="System design is really six components — database, caching, scaling, delegation, concurrency and communication. Deep-dive notes with hands-on Spring Boot implementations.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root{
-    --paper:#FBF8F5;
-    --paper-2:#FFFFFF;
-    --paper-3:#F4EEE8;
-    --ink:#231F1C;
-    --muted:#6B615A;
-    --line:#E7DFD7;
-    --line-soft:#F0E9E2;
-    --accent:#C7431F;
-    --accent-soft:#FBE9E2;
-    --amber:#C97A0A;
-    --amber-soft:#FCF1DE;
-    --blue:#2C5FBF;   --blue-soft:#E8EFFC;
-    --green:#1E8E5A;  --green-soft:#E4F5EC;
-    --red:#BE4040;    --red-soft:#FBEAEA;
-    --purple:#6E48B0; --purple-soft:#F0EAFA;
-    --teal:#158D8D;   --teal-soft:#DFF1F1;
-    --slate:#4A5A7A;  --slate-soft:#EAEDF3;
-    --sky:#1F6FB6;    --sky-soft:#E1EEF7;
-    --code:#F2ECE6;
-    --shadow-sm:0 2px 8px rgba(35,31,28,.05);
-    --shadow-md:0 8px 24px -10px rgba(35,31,28,.18);
-    --shadow-lg:0 20px 48px -20px rgba(35,31,28,.28);
-    --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
-    --sans:'Inter',system-ui,-apple-system,sans-serif;
-    --serif:'Fraunces',Georgia,'Times New Roman',serif;
-    --r:16px;
-  }
-  html[data-theme="dark"]{
-    --paper:#151311;
-    --paper-2:#1D1A17;
-    --paper-3:#252119;
-    --ink:#F2EBE4;
-    --muted:#A2968C;
-    --line:#332D27;
-    --line-soft:#292420;
-    --accent:#F2764C;
-    --accent-soft:#3A231B;
-    --amber:#E5A23C;  --amber-soft:#332715;
-    --blue:#7BA5F0;   --blue-soft:#1B2537;
-    --green:#4FC28B;  --green-soft:#152A20;
-    --red:#E97B7B;    --red-soft:#331D1D;
-    --purple:#A98BE0; --purple-soft:#241C33;
-    --teal:#48C0BE;   --teal-soft:#142B2B;
-    --slate:#93A5C4;  --slate-soft:#1E232D;
-    --sky:#5FAEE8;    --sky-soft:#152534;
-    --code:#252019;
-    --shadow-sm:0 2px 8px rgba(0,0,0,.3);
-    --shadow-md:0 8px 24px -10px rgba(0,0,0,.6);
-    --shadow-lg:0 20px 48px -20px rgba(0,0,0,.8);
-  }
+/* ══════════════ TOKENS ══════════════ */
+:root{
+  --sat:78%; --lit:62%; --litSoft:16%;
+  --bg:#08090C;
+  --bg-2:#0D0F14;
+  --surface:rgba(255,255,255,.028);
+  --surface-2:rgba(255,255,255,.055);
+  --stroke:rgba(255,255,255,.09);
+  --stroke-2:rgba(255,255,255,.16);
+  --ink:#F4F2EF;
+  --muted:#9A9691;
+  --dim:#6E6A66;
+  --brand:#FF6A3D;
+  --brand-2:#FFB03A;
+  --brand-3:#8B6BFF;
+  --display:'Space Grotesk',system-ui,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,monospace;
+  --r:20px;
+  --shadow:0 30px 60px -30px rgba(0,0,0,.85);
+}
+html[data-theme="light"]{
+  --sat:72%; --lit:40%; --litSoft:94%;
+  --bg:#F7F5F2;
+  --bg-2:#FFFFFF;
+  --surface:rgba(20,16,12,.028);
+  --surface-2:rgba(20,16,12,.05);
+  --stroke:rgba(20,16,12,.10);
+  --stroke-2:rgba(20,16,12,.18);
+  --ink:#17140F;
+  --muted:#635C54;
+  --dim:#8B837A;
+  --brand:#D9451C;
+  --brand-2:#B87708;
+  --brand-3:#6446D6;
+  --shadow:0 30px 60px -32px rgba(23,20,15,.28);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:var(--sans); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden; min-height:100vh;
+  transition:background .5s ease,color .5s ease;
+}
+a{color:inherit;text-decoration:none}
+::selection{background:var(--brand);color:#fff}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
 
-  *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
-  body{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:var(--sans);
-    line-height:1.6;
-    font-size:16px;
-    min-height:100vh;
-    -webkit-font-smoothing:antialiased;
-    transition:background .35s ease, color .35s ease;
-    overflow-x:hidden;
-  }
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-  a{color:inherit;text-decoration:none}
-  ::selection{background:var(--accent-soft);color:var(--accent)}
+/* ══════════════ BACKDROP ══════════════ */
+.aurora{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.aurora i{
+  position:absolute;display:block;border-radius:50%;
+  filter:blur(90px);opacity:.5;
+  animation:drift 26s ease-in-out infinite;
+}
+.aurora i:nth-child(1){width:620px;height:620px;top:-260px;left:-140px;background:var(--brand);opacity:.30}
+.aurora i:nth-child(2){width:540px;height:540px;top:-200px;right:-120px;background:var(--brand-3);opacity:.26;animation-delay:-9s}
+.aurora i:nth-child(3){width:460px;height:460px;top:280px;left:42%;background:var(--brand-2);opacity:.16;animation-delay:-17s}
+html[data-theme="light"] .aurora i{opacity:.22;filter:blur(110px)}
+@keyframes drift{
+  0%,100%{transform:translate3d(0,0,0) scale(1)}
+  33%{transform:translate3d(50px,40px,0) scale(1.12)}
+  66%{transform:translate3d(-40px,24px,0) scale(.94)}
+}
+.grain{
+  position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.32;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.page{position:relative;z-index:2}
 
-  /* ============ AMBIENT ============ */
-  .glow{
-    position:fixed; inset:0; pointer-events:none; z-index:0;
-    background:
-      radial-gradient(520px circle at 12% -5%, var(--accent-soft), transparent 60%),
-      radial-gradient(600px circle at 88% 8%, var(--amber-soft), transparent 62%);
-    opacity:.75;
-  }
-  html[data-theme="dark"] .glow{opacity:.5}
+/* ══════════════ NAV ══════════════ */
+.nav{position:fixed;top:16px;left:0;right:0;z-index:60;display:flex;justify-content:center;padding:0 16px}
+.nav-pill{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 10px 9px 16px;border-radius:999px;
+  background:color-mix(in srgb,var(--bg-2) 72%,transparent);
+  border:1px solid var(--stroke);
+  backdrop-filter:blur(20px) saturate(160%);
+  box-shadow:0 14px 40px -20px rgba(0,0,0,.7);
+  max-width:100%;
+}
+.brand{display:flex;align-items:center;gap:10px;margin-right:6px;min-width:0}
+.brand-dot{
+  width:26px;height:26px;border-radius:8px;flex:none;
+  background:linear-gradient(135deg,var(--brand),var(--brand-2));
+  display:grid;place-items:center;color:#fff;font-family:var(--display);font-weight:700;font-size:13px;
+}
+.brand b{font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+.nav-sep{width:1px;height:20px;background:var(--stroke);flex:none}
+.nav-search{
+  display:flex;align-items:center;gap:9px;
+  padding:7px 10px 7px 12px;border-radius:999px;
+  border:1px solid var(--stroke);color:var(--muted);
+  font-size:13px;transition:all .2s;white-space:nowrap;
+}
+.nav-search:hover{border-color:var(--stroke-2);color:var(--ink);background:var(--surface)}
+.nav-search kbd{
+  font-family:var(--mono);font-size:10px;padding:2px 6px;border-radius:5px;
+  background:var(--surface-2);border:1px solid var(--stroke);color:var(--dim);
+}
+.icb{
+  width:34px;height:34px;flex:none;border-radius:999px;display:grid;place-items:center;
+  border:1px solid var(--stroke);color:var(--muted);transition:all .2s;
+}
+.icb:hover{color:var(--ink);border-color:var(--stroke-2);background:var(--surface);transform:translateY(-1px)}
+.icb svg{width:16px;height:16px}
+.bar{position:fixed;top:0;left:0;height:2px;z-index:70;background:linear-gradient(90deg,var(--brand),var(--brand-2));width:0}
 
-  /* ============ TOP BAR ============ */
-  .topbar{
-    position:sticky; top:0; z-index:50;
-    backdrop-filter:blur(14px);
-    background:color-mix(in srgb, var(--paper) 82%, transparent);
-    border-bottom:1px solid transparent;
-    transition:border-color .3s, box-shadow .3s;
-  }
-  .topbar.stuck{border-bottom-color:var(--line); box-shadow:var(--shadow-sm)}
-  .topbar-inner{
-    max-width:1080px;margin:0 auto;padding:12px 24px;
-    display:flex;align-items:center;gap:14px;
-  }
-  .logo{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
-  .logo-mark{
-    width:32px;height:32px;border-radius:9px;flex:none;
-    background:linear-gradient(140deg,var(--accent),var(--amber));
-    display:grid;place-items:center;color:#fff;
-    font-family:var(--serif);font-weight:700;font-size:15px;
-  }
-  .logo b{font-family:var(--serif);font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
-  .logo span{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-  .iconbtn{
-    width:36px;height:36px;flex:none;border-radius:10px;cursor:pointer;
-    border:1px solid var(--line);background:var(--paper-2);color:var(--muted);
-    display:grid;place-items:center;transition:all .18s;
-  }
-  .iconbtn:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
-  .iconbtn svg{width:17px;height:17px}
-  .progress{position:absolute;left:0;bottom:-1px;height:2px;background:var(--accent);width:0;transition:width .1s linear}
+/* ══════════════ HERO ══════════════ */
+header{padding:150px 0 40px;position:relative}
+.tagline{
+  display:inline-flex;align-items:center;gap:9px;margin-bottom:26px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);border:1px solid var(--stroke);border-radius:999px;padding:6px 14px;
+  background:var(--surface);
+}
+.tagline .live{width:6px;height:6px;border-radius:50%;background:#3ECF8E;box-shadow:0 0 0 0 rgba(62,207,142,.6);animation:ping 2.4s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(62,207,142,.55)}70%{box-shadow:0 0 0 7px rgba(62,207,142,0)}100%{box-shadow:0 0 0 0 rgba(62,207,142,0)}}
 
-  /* ============ HERO ============ */
-  header{position:relative;z-index:1;padding:56px 0 8px}
-  .eyebrow{
-    font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;
-    text-transform:uppercase;color:var(--amber);margin-bottom:16px;
-    display:flex;align-items:center;gap:10px;
-  }
-  .eyebrow:before{content:'';width:26px;height:1.5px;background:var(--amber);opacity:.6}
-  h1{
-    font-family:var(--serif);
-    font-size:clamp(32px,5.2vw,52px);
-    font-weight:600;line-height:1.08;letter-spacing:-.02em;
-    max-width:20ch;
-  }
-  h1 b{
-    font-weight:700;color:var(--accent);position:relative;white-space:nowrap;
-  }
-  h1 b:after{
-    content:'';position:absolute;left:0;right:0;bottom:.08em;height:.28em;
-    background:var(--accent-soft);z-index:-1;border-radius:2px;
-  }
+h1{
+  font-family:var(--display);
+  font-size:clamp(40px,7.4vw,88px);
+  font-weight:600;line-height:.98;letter-spacing:-.035em;
+  max-width:14ch;
+}
+h1 .grad{
+  background:linear-gradient(100deg,var(--brand) 0%,var(--brand-2) 42%,var(--brand-3) 88%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  background-size:220% auto;animation:shimmer 7s linear infinite;
+}
+@keyframes shimmer{to{background-position:220% center}}
+h1 .by{
+  display:block;font-family:var(--serif);font-style:italic;font-weight:400;
+  font-size:.46em;letter-spacing:-.01em;color:var(--muted);margin-top:.1em;
+}
 
-  .points{margin-top:26px;max-width:660px;list-style:none;display:grid;gap:13px}
-  .points li{
-    position:relative;padding-left:30px;color:var(--muted);
-    font-size:16px;line-height:1.55;
-  }
-  .points li .n{
-    position:absolute;left:0;top:1px;
-    width:20px;height:20px;border-radius:6px;
-    background:var(--accent-soft);color:var(--accent);
-    font-family:var(--mono);font-size:10.5px;font-weight:500;
-    display:grid;place-items:center;
-  }
-  .points li b{color:var(--ink);font-weight:600}
-  .points li i{
-    font-style:normal;color:var(--ink);font-weight:500;
-    box-shadow:inset 0 -7px 0 var(--amber-soft);
-  }
+.points{margin-top:34px;max-width:620px;display:grid;gap:16px}
+.points li{list-style:none;position:relative;padding-left:36px;color:var(--muted);font-size:16.5px;line-height:1.55}
+.points li .n{
+  position:absolute;left:0;top:0;width:24px;height:24px;border-radius:8px;
+  display:grid;place-items:center;font-family:var(--mono);font-size:11px;
+  color:var(--brand);border:1px solid var(--stroke);background:var(--surface);
+}
+.points li b{color:var(--ink);font-weight:600}
+.points li i{font-style:normal;color:var(--ink);font-weight:500}
 
-  .meta{
-    margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;
-  }
-  .chip{
-    font-family:var(--mono);font-size:11px;letter-spacing:.05em;
-    color:var(--muted);background:var(--paper-2);
-    border:1px solid var(--line);border-radius:20px;padding:5px 12px;
-  }
-  .chip b{color:var(--ink);font-weight:500}
-  .chip.live{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent)}
-  .chip.live i{
-    display:inline-block;width:6px;height:6px;border-radius:50%;
-    background:var(--green);margin-right:6px;vertical-align:middle;
-    animation:pulse 2s infinite;
-  }
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:38px}
+.btn{
+  display:inline-flex;align-items:center;gap:9px;
+  padding:13px 22px;border-radius:999px;font-size:14.5px;font-weight:500;
+  border:1px solid var(--stroke);transition:transform .2s,background .2s,border-color .2s;
+  will-change:transform;
+}
+.btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand-2));color:#fff;border-color:transparent}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost:hover{border-color:var(--stroke-2);background:var(--surface)}
+.btn span{transition:transform .2s}
+.btn:hover span{transform:translateX(4px)}
 
-  /* ============ SIX BLOCKS ============ */
-  .six{
-    position:relative;z-index:1;margin:44px 0 0;
-    border:1px solid var(--line);border-radius:var(--r);
-    background:var(--paper-2);overflow:hidden;box-shadow:var(--shadow-sm);
-  }
-  .six-head{
-    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-    padding:16px 20px;border-bottom:1px solid var(--line-soft);
-  }
-  .six-head h2{
-    font-family:var(--serif);font-size:17px;font-weight:600;letter-spacing:-.01em;
-  }
-  .six-head .hint{
-    margin-left:auto;font-family:var(--mono);font-size:10.5px;
-    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
-  }
-  .six-grid{
-    display:grid;grid-template-columns:repeat(6,1fr);
-    border-bottom:1px solid var(--line-soft);
-  }
-  .blk{
-    border-right:1px solid var(--line-soft);
-    padding:18px 12px;text-align:center;cursor:pointer;
-    background:transparent;font-family:inherit;color:inherit;
-    transition:background .2s, transform .2s;
-    position:relative;
-  }
-  .blk:last-child{border-right:none}
-  .blk:hover,.blk.on{background:var(--paper-3)}
-  .blk:after{
-    content:'';position:absolute;left:0;right:0;bottom:0;height:2.5px;
-    background:var(--c,var(--accent));transform:scaleX(0);
-    transition:transform .25s cubic-bezier(.2,.8,.2,1);
-  }
-  .blk:hover:after,.blk.on:after{transform:scaleX(1)}
-  .blk .g{
-    width:34px;height:34px;margin:0 auto 8px;border-radius:9px;
-    display:grid;place-items:center;font-size:16px;
-    background:var(--cs);color:var(--c);
-    transition:transform .25s cubic-bezier(.2,.8,.2,1);
-  }
-  .blk:hover .g,.blk.on .g{transform:translateY(-2px) scale(1.08)}
-  .blk .nm{font-size:12.5px;font-weight:600;letter-spacing:-.005em}
-  .blk .ct{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:2px}
+.stats{display:flex;gap:34px;margin-top:46px;flex-wrap:wrap}
+.stat b{display:block;font-family:var(--display);font-size:34px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.stat span{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-top:7px;display:block}
 
-  .six-panel{padding:18px 20px;display:flex;gap:16px;align-items:flex-start;min-height:96px}
-  .six-panel .bar{width:3px;align-self:stretch;border-radius:3px;background:var(--c,var(--accent));flex:none;transition:background .25s}
-  .six-panel .txt{flex:1;min-width:0}
-  .six-panel h3{
-    font-family:var(--serif);font-size:18px;font-weight:600;
-    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px;
-  }
-  .six-panel h3 em{
-    font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.09em;
-    text-transform:uppercase;color:var(--c,var(--accent));
-    background:var(--cs,var(--accent-soft));padding:3px 8px;border-radius:20px;
-  }
-  .six-panel p{color:var(--muted);font-size:14.8px;line-height:1.55;max-width:74ch}
-  .six-panel .go{
-    display:inline-flex;align-items:center;gap:6px;margin-top:9px;
-    font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
-    color:var(--accent);cursor:pointer;background:none;border:none;padding:0;
-  }
-  .six-panel .go span{transition:transform .2s}
-  .six-panel .go:hover span{transform:translateX(4px)}
-  .fadein{animation:fade .3s ease}
-  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+/* ══════════════ MARQUEE ══════════════ */
+.marquee{
+  margin:70px 0 0;padding:16px 0;overflow:hidden;
+  border-top:1px solid var(--stroke);border-bottom:1px solid var(--stroke);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+}
+.marquee-track{display:flex;gap:34px;width:max-content;animation:slide 42s linear infinite}
+.marquee:hover .marquee-track{animation-play-state:paused}
+@keyframes slide{to{transform:translateX(-50%)}}
+.marquee span{
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dim);white-space:nowrap;display:flex;align-items:center;gap:34px;
+}
+.marquee span:after{content:'';width:4px;height:4px;border-radius:50%;background:var(--brand);opacity:.5}
 
-  /* ============ SEARCH ============ */
-  main{position:relative;z-index:1;padding:38px 0 72px}
-  .searchbar{position:relative;margin-bottom:12px}
-  .searchbar input{
-    width:100%;font-family:var(--sans);font-size:15.5px;
-    padding:15px 96px 15px 48px;
-    border:1.5px solid var(--line);border-radius:14px;
-    background:var(--paper-2);color:var(--ink);
-    transition:border-color .18s, box-shadow .18s;
-  }
-  .searchbar input:focus{
-    outline:none;border-color:var(--accent);
-    box-shadow:0 0 0 4px var(--accent-soft);
-  }
-  .searchbar input::placeholder{color:var(--muted);opacity:.75}
-  .s-ico{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:19px;height:19px;color:var(--muted);pointer-events:none}
-  .kbd{
-    position:absolute;right:16px;top:50%;transform:translateY(-50%);
-    font-family:var(--mono);font-size:10.5px;color:var(--muted);
-    border:1px solid var(--line);border-radius:6px;padding:3px 7px;
-    background:var(--paper-3);pointer-events:none;transition:opacity .15s;
-  }
-  .clearbtn{
-    position:absolute;right:14px;top:50%;transform:translateY(-50%);
-    width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;
-    background:var(--paper-3);color:var(--muted);display:none;place-items:center;font-size:15px;line-height:1;
-  }
-  .clearbtn:hover{background:var(--accent-soft);color:var(--accent)}
-  .clearbtn.show{display:grid}
-  .kbd.hide{opacity:0}
+/* ══════════════ SECTION ══════════════ */
+section{padding:96px 0 0}
+.sec-top{display:flex;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:34px}
+.sec-num{
+  font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--brand);
+  border:1px solid var(--stroke);border-radius:999px;padding:5px 12px;background:var(--surface);
+}
+.sec-top h2{font-family:var(--display);font-size:clamp(26px,3.6vw,38px);font-weight:600;letter-spacing:-.025em;line-height:1.1}
+.sec-top p{color:var(--muted);font-size:15px;max-width:46ch;margin-left:auto}
 
-  .controls{
-    display:flex;justify-content:space-between;align-items:center;gap:12px;
-    margin-bottom:22px;font-family:var(--mono);font-size:11.5px;color:var(--muted);flex-wrap:wrap;
-  }
-  .controls b{color:var(--ink);font-weight:500}
-  .controls .btns{display:flex;gap:6px}
-  .controls button{
-    background:var(--paper-2);border:1px solid var(--line);
-    font-family:var(--mono);font-size:10.5px;color:var(--muted);
-    cursor:pointer;letter-spacing:.07em;text-transform:uppercase;
-    padding:6px 11px;border-radius:8px;transition:all .16s;
-  }
-  .controls button:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+/* ══════════════ EXPLORER (six blocks) ══════════════ */
+.explorer{
+  border:1px solid var(--stroke);border-radius:var(--r);overflow:hidden;
+  background:var(--surface);backdrop-filter:blur(12px);
+}
+.rail{display:grid;grid-template-columns:repeat(6,1fr);border-bottom:1px solid var(--stroke)}
+.blk{
+  position:relative;padding:22px 10px;border-right:1px solid var(--stroke);
+  transition:background .25s;text-align:center;
+}
+.blk:last-child{border-right:none}
+.blk:hover,.blk.on{background:var(--surface-2)}
+.blk:before{
+  content:'';position:absolute;inset:auto 0 0 0;height:2px;
+  background:hsl(var(--h) var(--sat) var(--lit));
+  transform:scaleX(0);transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.blk.on:before,.blk:hover:before{transform:scaleX(1)}
+.blk .g{
+  width:38px;height:38px;margin:0 auto 10px;border-radius:11px;display:grid;place-items:center;
+  font-size:17px;color:hsl(var(--h) var(--sat) var(--lit));
+  background:hsl(var(--h) var(--sat) var(--lit) / .13);
+  border:1px solid hsl(var(--h) var(--sat) var(--lit) / .22);
+  transition:transform .3s cubic-bezier(.2,.8,.2,1);
+}
+.blk:hover .g,.blk.on .g{transform:translateY(-3px) rotate(-6deg)}
+.blk .nm{font-family:var(--display);font-size:13.5px;font-weight:600;letter-spacing:-.01em}
+.blk .ct{font-family:var(--mono);font-size:9.5px;color:var(--dim);margin-top:3px}
 
-  .empty-msg{
-    display:none;text-align:center;color:var(--muted);
-    padding:48px 20px;border:1px dashed var(--line);border-radius:var(--r);
-  }
-  .empty-msg.show{display:block}
-  .empty-msg b{display:block;font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:6px}
+.stage{padding:30px;display:grid;grid-template-columns:1fr auto;gap:28px;align-items:center;min-height:150px}
+.stage-txt h3{font-family:var(--display);font-size:26px;font-weight:600;letter-spacing:-.02em;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stage-txt h3 em{
+  font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  color:hsl(var(--h) var(--sat) var(--lit));background:hsl(var(--h) var(--sat) var(--lit) / .13);
+  border:1px solid hsl(var(--h) var(--sat) var(--lit) / .22);padding:4px 10px;border-radius:999px;
+}
+.stage-txt p{color:var(--muted);font-size:15.5px;line-height:1.6;margin-top:12px;max-width:70ch}
+.stage-go{
+  display:inline-flex;align-items:center;gap:8px;margin-top:16px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;
+  color:hsl(var(--h) var(--sat) var(--lit));
+}
+.stage-go span{transition:transform .2s}
+.stage-go:hover span{transform:translateX(5px)}
+.stage-mark{
+  font-family:var(--display);font-size:96px;font-weight:700;line-height:1;letter-spacing:-.05em;
+  color:hsl(var(--h) var(--sat) var(--lit) / .16);
+}
+.pop{animation:pop .35s cubic-bezier(.2,.9,.3,1)}
+@keyframes pop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-  /* ============ CATEGORY CARDS ============ */
-  #cats{display:grid;gap:12px}
-  .cat{
-    border:1px solid var(--line);
-    background:var(--paper-2);
-    border-radius:var(--r);
-    overflow:hidden;
-    transition:box-shadow .25s, border-color .25s, transform .25s;
-    opacity:0;transform:translateY(14px);
-  }
-  .cat.in{opacity:1;transform:none}
-  .cat:hover{border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line));box-shadow:var(--shadow-md)}
-  .cat.open{border-color:var(--c,var(--accent));box-shadow:var(--shadow-md)}
+/* ══════════════ BENTO ══════════════ */
+.bento{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.card{
+  grid-column:span 2;position:relative;overflow:hidden;
+  border:1px solid var(--stroke);border-radius:var(--r);
+  background:var(--bg-2);
+  padding:24px;
+  transition:transform .35s cubic-bezier(.2,.8,.2,1),border-color .3s,box-shadow .35s;
+  opacity:0;transform:translateY(24px);
+}
+.card.wide{grid-column:span 3}
+.card.in{opacity:1;transform:none}
+.card:before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;
+  background:radial-gradient(420px circle at var(--mx,50%) var(--my,50%),
+             hsl(var(--h) var(--sat) var(--lit) / .13), transparent 62%);
+}
+.card:hover:before{opacity:1}
+.card:hover{
+  border-color:hsl(var(--h) var(--sat) var(--lit) / .45);
+  box-shadow:var(--shadow);
+  transform:translateY(-5px);
+}
+.card-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:16px}
+.card .ic{
+  width:44px;height:44px;flex:none;border-radius:13px;display:grid;place-items:center;font-size:19px;
+  color:hsl(var(--h) var(--sat) var(--lit));
+  background:hsl(var(--h) var(--sat) var(--lit) / .12);
+  border:1px solid hsl(var(--h) var(--sat) var(--lit) / .2);
+  transition:transform .35s cubic-bezier(.2,.8,.2,1);
+}
+.card:hover .ic{transform:rotate(-8deg) scale(1.08)}
+.card h3{font-family:var(--display);font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.2}
+.card .sub{font-size:13.4px;color:var(--dim);margin-top:4px;line-height:1.45}
+.card .tally{
+  margin-left:auto;flex:none;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
+  color:hsl(var(--h) var(--sat) var(--lit));
+  background:hsl(var(--h) var(--sat) var(--lit) / .12);
+  padding:4px 9px;border-radius:999px;
+}
+.links{display:grid;gap:2px;position:relative}
+.lnk{
+  display:flex;align-items:flex-start;gap:11px;padding:11px 12px;border-radius:12px;
+  transition:background .2s,transform .2s;
+}
+.lnk:hover{background:var(--surface-2);transform:translateX(4px)}
+.lnk .pip{
+  width:6px;height:6px;border-radius:50%;margin-top:8px;flex:none;
+  background:hsl(var(--h) var(--sat) var(--lit));transition:box-shadow .2s,transform .2s;
+}
+.lnk:hover .pip{transform:scale(1.4);box-shadow:0 0 0 4px hsl(var(--h) var(--sat) var(--lit) / .18)}
+.lnk .t{font-size:14.6px;font-weight:500;line-height:1.35;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.lnk .d{font-size:12.8px;color:var(--dim);margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.lnk .ar{font-family:var(--mono);font-size:12px;color:hsl(var(--h) var(--sat) var(--lit));opacity:0;transform:translateX(-4px);transition:.2s}
+.lnk:hover .ar{opacity:1;transform:none}
+.new{
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;
+  color:#3ECF8E;background:rgba(62,207,142,.13);border:1px solid rgba(62,207,142,.25);
+  padding:2px 7px;border-radius:999px;
+}
 
-  .cat-head{
-    width:100%;display:flex;align-items:center;gap:16px;
-    padding:18px 20px;background:transparent;border:none;cursor:pointer;
-    text-align:left;font-family:inherit;color:inherit;transition:background .18s;
-  }
-  .cat-head:hover{background:var(--paper-3)}
-  .cat-head:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
+/* ══════════════ TOOLTIP ══════════════ */
+.tip{
+  position:fixed;z-index:200;max-width:330px;pointer-events:none;
+  background:color-mix(in srgb,var(--bg-2) 94%,transparent);
+  border:1px solid var(--stroke-2);border-radius:14px;padding:14px 16px;
+  box-shadow:var(--shadow);backdrop-filter:blur(18px);
+  opacity:0;transform:translateY(8px) scale(.97);transition:opacity .18s,transform .18s;
+}
+.tip.show{opacity:1;transform:none}
+.tip .lab{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  color:hsl(var(--h) var(--sat) var(--lit));margin-bottom:6px;
+  display:flex;align-items:center;gap:7px;
+}
+.tip .lab:before{content:'';width:7px;height:7px;border-radius:2px;background:hsl(var(--h) var(--sat) var(--lit))}
+.tip p{font-size:13.4px;line-height:1.5;color:var(--muted)}
+@media (hover:none){.tip{display:none}}
 
-  .icon{
-    width:44px;height:44px;flex:none;border-radius:12px;
-    display:grid;place-items:center;font-size:20px;
-    background:var(--cs);color:var(--c);
-    transition:transform .3s cubic-bezier(.2,.8,.2,1);
-  }
-  .cat:hover .icon{transform:rotate(-6deg) scale(1.07)}
-  .cat.open .icon{transform:rotate(0) scale(1)}
+/* ══════════════ COMMAND PALETTE ══════════════ */
+.scrim{
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(4,5,8,.62);backdrop-filter:blur(8px);
+  padding:14vh 20px 20px;justify-content:center;align-items:flex-start;
+}
+.scrim.open{display:flex;animation:fadein .18s ease}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.palette{
+  width:100%;max-width:620px;border-radius:18px;overflow:hidden;
+  background:color-mix(in srgb,var(--bg-2) 96%,transparent);
+  border:1px solid var(--stroke-2);box-shadow:0 40px 90px -30px rgba(0,0,0,.85);
+  animation:rise .25s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes rise{from{opacity:0;transform:translateY(16px) scale(.98)}to{opacity:1;transform:none}}
+.pal-in{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--stroke)}
+.pal-in svg{width:18px;height:18px;color:var(--dim);flex:none}
+.pal-in input{
+  flex:1;background:none;border:none;outline:none;color:var(--ink);
+  font-family:var(--sans);font-size:16px;
+}
+.pal-in input::placeholder{color:var(--dim)}
+.pal-in kbd{font-family:var(--mono);font-size:10px;padding:3px 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--stroke);color:var(--dim)}
+.pal-list{max-height:52vh;overflow-y:auto;padding:8px}
+.pal-list::-webkit-scrollbar{width:6px}
+.pal-list::-webkit-scrollbar-thumb{background:var(--stroke-2);border-radius:6px}
+.pal-group{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);padding:12px 12px 6px}
+.pal-item{
+  display:flex;align-items:center;gap:12px;padding:11px 12px;border-radius:11px;cursor:pointer;
+}
+.pal-item .pi{
+  width:30px;height:30px;flex:none;border-radius:9px;display:grid;place-items:center;font-size:14px;
+  color:hsl(var(--h) var(--sat) var(--lit));background:hsl(var(--h) var(--sat) var(--lit) / .13);
+}
+.pal-item .pt{flex:1;min-width:0}
+.pal-item .pt b{display:block;font-size:14.2px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pal-item .pt small{display:block;font-size:11.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pal-item .go{font-family:var(--mono);font-size:11px;color:var(--dim);opacity:0}
+.pal-item.sel{background:var(--surface-2)}
+.pal-item.sel .go{opacity:1;color:var(--brand)}
+.pal-empty{padding:38px 20px;text-align:center;color:var(--dim);font-size:14px}
 
-  .cat-title{flex:1;min-width:0}
-  .cat-title h2{
-    font-family:var(--serif);font-size:20px;font-weight:600;
-    line-height:1.25;letter-spacing:-.01em;
-    display:flex;align-items:center;gap:9px;flex-wrap:wrap;
-  }
-  .cat-title p{font-size:13.8px;color:var(--muted);margin-top:3px;line-height:1.45}
-  .cat-count{
-    font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
-    color:var(--c);background:var(--cs);padding:4px 10px;border-radius:20px;flex:none;
-  }
-  .chev{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .3s cubic-bezier(.2,.8,.2,1),color .2s}
-  .cat.open .chev{transform:rotate(180deg);color:var(--c)}
+/* ══════════════ FOOTER ══════════════ */
+footer{margin-top:110px;border-top:1px solid var(--stroke);padding:44px 0 56px}
+.foot-in{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+.foot-in .m{font-family:var(--mono);font-size:11.5px;color:var(--dim);letter-spacing:.05em}
+.wordmark{
+  font-family:var(--display);font-size:clamp(46px,11vw,132px);font-weight:700;
+  letter-spacing:-.05em;line-height:1;margin-top:38px;
+  background:linear-gradient(180deg,var(--ink) 0%,transparent 130%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  opacity:.15;user-select:none;
+}
 
-  .cat-body{height:0;overflow:hidden;transition:height .32s cubic-bezier(.2,.8,.2,1)}
-  .cat-body-inner{padding:2px 20px 18px 80px;border-top:1px dashed var(--line-soft)}
-  @media (max-width:640px){.cat-body-inner{padding-left:20px}}
-
-  .doc{
-    display:flex;align-items:flex-start;gap:13px;
-    padding:14px 12px 14px 0;border-bottom:1px dotted var(--line);
-    color:var(--ink);border-radius:10px;
-    transition:transform .18s, background .18s, padding .18s;
-  }
-  .doc:last-child{border-bottom:none;padding-bottom:4px}
-  .doc:hover{transform:translateX(6px);background:var(--paper-3);padding-left:10px}
-  .doc .dot{
-    width:7px;height:7px;border-radius:50%;background:var(--c);
-    margin-top:9px;flex:none;transition:transform .18s, box-shadow .18s;
-  }
-  .doc:hover .dot{transform:scale(1.5);box-shadow:0 0 0 4px var(--cs)}
-  .doc-body{flex:1;min-width:0}
-  .doc-title{
-    font-size:15.8px;font-weight:600;line-height:1.35;
-    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
-  }
-  .doc-title .arrow{
-    font-family:var(--mono);font-size:13px;color:var(--c);
-    opacity:0;transform:translateX(-5px);transition:opacity .18s, transform .18s;
-  }
-  .doc:hover .doc-title .arrow{opacity:1;transform:translateX(0)}
-  .doc-desc{font-size:13.8px;color:var(--muted);margin-top:3px;line-height:1.5}
-  .badge{
-    font-family:var(--mono);font-size:9.5px;font-weight:400;letter-spacing:.1em;
-    text-transform:uppercase;color:var(--green);background:var(--green-soft);
-    padding:3px 8px;border-radius:20px;
-  }
-  mark{background:var(--amber-soft);color:var(--ink);border-radius:3px;padding:0 2px}
-
-  /* ============ HOVER TOOLTIP ============ */
-  .tip{
-    position:fixed;z-index:200;max-width:330px;
-    background:var(--paper-2);border:1px solid var(--line);
-    border-radius:12px;padding:13px 15px;box-shadow:var(--shadow-lg);
-    opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;
-    transition:opacity .16s ease, transform .16s ease;
-  }
-  .tip.show{opacity:1;transform:none}
-  .tip .t-label{
-    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
-    color:var(--c,var(--accent));margin-bottom:5px;display:flex;align-items:center;gap:6px;
-  }
-  .tip .t-label:before{content:'';width:6px;height:6px;border-radius:2px;background:var(--c,var(--accent))}
-  .tip p{font-size:13.4px;line-height:1.5;color:var(--muted)}
-  .tip p b{color:var(--ink);font-weight:600}
-  @media (hover:none){.tip{display:none}}
-
-  /* ============ FOOTER ============ */
-  footer{
-    position:relative;z-index:1;
-    padding:30px 0 44px;border-top:1px solid var(--line);
-    color:var(--muted);font-size:13.5px;
-  }
-  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
-  footer .mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em}
-  .totop{
-    display:inline-flex;align-items:center;gap:7px;cursor:pointer;
-    background:none;border:none;font-family:var(--mono);font-size:11.5px;
-    color:var(--accent);letter-spacing:.05em;
-  }
-  .totop:hover span{transform:translateY(-3px)}
-  .totop span{transition:transform .2s}
-
-  /* ============ RESPONSIVE ============ */
-  @media (max-width:900px){
-    .six-grid{grid-template-columns:repeat(3,1fr)}
-    .blk:nth-child(3n){border-right:none}
-    .blk:nth-child(-n+3){border-bottom:1px solid var(--line-soft)}
-  }
-  @media (max-width:640px){
-    .wrap{padding:0 16px}
-    .topbar-inner{padding:10px 16px}
-    header{padding:36px 0 4px}
-    .logo span{display:none}
-    .six-grid{grid-template-columns:repeat(2,1fr)}
-    .blk{border-right:1px solid var(--line-soft) !important;border-bottom:1px solid var(--line-soft)}
-    .blk:nth-child(2n){border-right:none !important}
-    .six-head .hint{display:none}
-    .cat-head{padding:15px 16px;gap:13px}
-    .icon{width:40px;height:40px;font-size:18px}
-    .cat-title h2{font-size:17.5px}
-    .cat-count{display:none}
-    .searchbar input{padding:14px 46px 14px 44px;font-size:15px}
-    .kbd{display:none}
-    .points li{font-size:15.3px}
-  }
-  @media (prefers-reduced-motion:reduce){
-    *{animation:none !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
-    .cat{opacity:1;transform:none}
-  }
+/* ══════════════ RESPONSIVE ══════════════ */
+@media (max-width:1000px){
+  .bento{grid-template-columns:repeat(4,1fr)}
+  .card,.card.wide{grid-column:span 2}
+  .rail{grid-template-columns:repeat(3,1fr)}
+  .blk:nth-child(3n){border-right:none}
+  .blk:nth-child(-n+3){border-bottom:1px solid var(--stroke)}
+  .stage{grid-template-columns:1fr}
+  .stage-mark{display:none}
+}
+@media (max-width:720px){
+  .wrap{padding:0 18px}
+  header{padding:120px 0 24px}
+  .bento{grid-template-columns:1fr}
+  .card,.card.wide{grid-column:span 1}
+  .rail{grid-template-columns:repeat(2,1fr)}
+  .blk{border-right:1px solid var(--stroke)!important;border-bottom:1px solid var(--stroke)}
+  .blk:nth-child(2n){border-right:none!important}
+  .brand b{display:none}
+  .nav-search .lbl{display:none}
+  .sec-top p{margin-left:0}
+  .stats{gap:24px}
+  .stat b{font-size:27px}
+  section{padding:70px 0 0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+  .card{opacity:1;transform:none}
+}
 </style>
 </head>
 <body>
-<div class="glow"></div>
 
-<div class="topbar" id="topbar">
-  <div class="topbar-inner">
-    <div class="logo">
-      <div class="logo-mark">S</div>
-      <div>
-        <b>System Design</b>
-        <span>by Purusottam</span>
-      </div>
+<div class="aurora"><i></i><i></i><i></i></div>
+<div class="grain"></div>
+<div class="bar" id="bar"></div>
+
+<div class="page">
+
+<nav class="nav">
+  <div class="nav-pill">
+    <div class="brand">
+      <div class="brand-dot">S</div>
+      <b>System Design</b>
     </div>
-    <button class="iconbtn" id="searchJump" title="Search (press /)" aria-label="Search">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <div class="nav-sep"></div>
+    <button class="nav-search" id="openPal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:15px;height:15px"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span class="lbl">Search guides</span>
+      <kbd id="kbdHint">⌘K</kbd>
     </button>
-    <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
-      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <button class="icb" id="themeBtn" aria-label="Toggle theme">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></svg>
     </button>
   </div>
-  <div class="progress" id="progress"></div>
-</div>
+</nav>
 
 <header><div class="wrap">
-  <div class="eyebrow">A personal library · Notes &amp; implementations</div>
-  <h1><b>System Design</b> by Purusottam</h1>
+  <div class="tagline"><span class="live"></span>Updated August 2026 · living notes</div>
+  <h1><span class="grad">System Design</span><span class="by">by Purusottam</span></h1>
 
   <ul class="points">
     <li><span class="n">1</span><b>System design is really just six components.</b> <i>Database</i>, <i>Caching</i>, <i>Scaling</i>, <i>Delegation</i>, <i>Concurrency</i> and <i>Communication</i> — keep these in mind and you can build Instagram, Tinder, WhatsApp or Uber, and scale it almost without limit.</li>
@@ -472,611 +453,427 @@
     <li><span class="n">3</span><b>Want each concept in depth?</b> Work through the sections below — one area at a time, internals first, then a hands-on Spring Boot implementation.</li>
   </ul>
 
-  <div class="meta">
-    <span class="chip live"><i></i>Updated <b>August 2026</b></span>
-    <span class="chip"><b id="stat-cats">9</b> categories</span>
-    <span class="chip"><b id="stat-docs">12</b> guides</span>
-    <span class="chip">Spring Boot · Java</span>
+  <div class="cta">
+    <a class="btn primary" href="#blocks">Explore the six <span>→</span></a>
+    <button class="btn ghost" id="openPal2">Search all guides <span>⌘K</span></button>
   </div>
 
-  <!-- ============ SIX BLOCKS ============ -->
-  <section class="six" id="six">
-    <div class="six-head">
-      <h2>The six building blocks</h2>
-      <span class="hint">Hover a block to see what it solves</span>
-    </div>
-    <div class="six-grid" id="sixGrid"></div>
-    <div class="six-panel" id="sixPanel"></div>
-  </section>
+  <div class="stats">
+    <div class="stat"><b data-count="9">0</b><span>Areas</span></div>
+    <div class="stat"><b data-count="12">0</b><span>Deep dives</span></div>
+    <div class="stat"><b data-count="240" data-suffix="+">0</b><span>Chapters</span></div>
+    <div class="stat"><b data-count="1" data-text="Spring Boot">0</b><span>Every implementation</span></div>
+  </div>
 </div></header>
 
-<main><div class="wrap">
+<div class="marquee"><div class="marquee-track" id="mq"></div></div>
 
-  <div class="searchbar">
-    <svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <input id="searchInput" type="text" placeholder="Search a topic — Kafka, MongoDB, HTTP/2, virtual threads, sharding…" autocomplete="off" spellcheck="false">
-    <span class="kbd" id="kbd">/</span>
-    <button class="clearbtn" id="clearBtn" aria-label="Clear search">×</button>
+<div class="page">
+
+<section id="blocks"><div class="wrap">
+  <div class="sec-top">
+    <span class="sec-num">01</span>
+    <h2>The six building blocks</h2>
+    <p>Hover any block — every large system you use is these six, recombined in a different order.</p>
   </div>
-
-  <div class="controls">
-    <span class="count">Showing <b id="visibleCount">9</b> of 9 categories · <b id="docCount">12</b> guides</span>
-    <span class="btns">
-      <button id="expandBtn">Expand all</button>
-      <button id="collapseBtn">Collapse all</button>
-    </span>
+  <div class="explorer">
+    <div class="rail" id="rail"></div>
+    <div class="stage" id="stage"></div>
   </div>
+</div></section>
 
-  <div id="empty" class="empty-msg"><b>Nothing found</b>Try a different word — or clear the search to see all nine areas.</div>
-
-  <div id="cats">
-
-    <!-- DATABASE -->
-    <div class="cat" id="c-database" style="--c:var(--blue);--cs:var(--blue-soft)"
-         data-name="Database"
-         data-tip="Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold — and how fast you can find any single row inside it."
-         data-keywords="database db mongodb dynamodb sql nosql cassandra storage internals sharding replication wiredtiger partition key gsi single table design">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">◆</div>
-        <div class="cat-title">
-          <h2>Database</h2>
-          <p>Storage engines, indexing, sharding, replication, transactions — how databases really work under the hood.</p>
-        </div>
-        <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/mongodb-internals-and-spring-boot-implementation" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">MongoDB Internals &amp; Spring Boot Implementation <span class="arrow">→</span></div>
-            <div class="doc-desc">Document model, WiredTiger, replica sets, sharding, transactions — with a full QuickBite Spring Boot build-out.</div>
-          </div>
-        </a>
-        <a class="doc" href="https://purusottam11.github.io/dynamoDb-internals-and-spring-boot-implementation/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">DynamoDB Internals &amp; Spring Boot Implementation <span class="arrow">→</span></div>
-            <div class="doc-desc">Partition keys, GSIs, capacity modes, streams, single-table design — with a ShopSwift e-commerce Spring Boot capstone.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- CACHING -->
-    <div class="cat" id="c-caching" style="--c:var(--red);--cs:var(--red-soft)"
-         data-name="Caching"
-         data-tip="The cheapest request is the one that never reaches your database. Caches trade a little staleness for a lot of latency — the hard part is deciding when to invalidate."
-         data-keywords="caching cache redis memcached cdn ttl eviction lru pub/sub streams geo search cache-aside write-through">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">◉</div>
-        <div class="cat-title">
-          <h2>Caching</h2>
-          <p>Redis, CDN edges, cache-aside vs write-through, invalidation strategies, and how caches change latency budgets.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/Redis-Internals-and-spring-boot-implementation/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Redis Internals &amp; Spring Boot Implementation <span class="arrow">→</span></div>
-            <div class="doc-desc">In-memory data structures, TTL, pub/sub, streams, search, geo, atomic counters, cluster &amp; persistence — with a full Spring Boot 4 + Java 25 build-out.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- SCALING -->
-    <div class="cat" id="c-scaling" style="--c:var(--green);--cs:var(--green-soft)"
-         data-name="Scaling"
-         data-tip="One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial — and P99 latency into the number you actually defend."
-         data-keywords="scaling horizontal vertical load balancer sharding partitioning capacity amazon ecommerce e-commerce flash sale skip locked 100m users p99 latency system design">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">▲</div>
-        <div class="cat-title">
-          <h2>Scaling</h2>
-          <p>Horizontal vs vertical scaling, load balancers, partitioning, capacity planning, and the P99 latency mindset.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/amazon-system-design/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Amazon System Design — 100 to 100M Users <span class="arrow">→</span></div>
-            <div class="doc-desc">A founder–CTO story of scaling an e-commerce platform: leaving Shopify, flash-sale locking with SKIP LOCKED, microservices, Kafka order flows, and vector-DB recommendations.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- DELEGATION -->
-    <div class="cat" id="c-delegation" style="--c:var(--amber);--cs:var(--amber-soft)"
-         data-name="Delegation"
-         data-tip="Not everything belongs in the request path. Queues and event logs hand slow work to a broker, so the user gets an answer now and the rest happens reliably later."
-         data-keywords="delegation messaging queue kafka rabbitmq event streaming pub sub broker consumer group exactly once dlt schema registry outbox">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">↯</div>
-        <div class="cat-title">
-          <h2>Delegation</h2>
-          <p>Message brokers, event streaming, task queues — offloading work from the request path to keep systems fast and decoupled.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/apache-kafka-internals-and-spring-boot-implementation" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Apache Kafka Internals &amp; Spring Boot Implementation <span class="arrow">→</span></div>
-            <div class="doc-desc">Brokers, partitions, consumer groups, exactly-once, DLT, Streams, Schema Registry — with a full QuickBite event platform build-out.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- CONCURRENCY -->
-    <div class="cat" id="c-concurrency" style="--c:var(--purple);--cs:var(--purple-soft)"
-         data-name="Concurrency"
-         data-tip="Thousands of requests touching the same row at once. Threads, locks and atomics are what decide whether that's an accurate inventory count or a very expensive bug."
-         data-keywords="concurrency threads locks synchronization race conditions parallelism multithreading multiprocessing virtual threads java 21 platform threads carrier thread executorservice thread pool deadlock livelock starvation volatile atomic cas jmm happens-before memory model context switch false sharing forkjoin structured concurrency pinning instagram flipkart uber tinder phonepe hotstar bookmyshow">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">∞</div>
-        <div class="cat-title">
-          <h2>Concurrency</h2>
-          <p>Threads, locks, atomics, race conditions, and the JVM concurrency primitives every backend engineer runs into.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/multithreading/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Multithreading, Visually — from CPU Cores to Virtual Threads <span class="arrow">→</span> <span class="badge">New</span></div>
-            <div class="doc-desc">28 chapters, concept-first then Java 21 — cores and context switching, race conditions, locks, the memory model, deadlock, thread pools, and virtual threads with pinning — taught through Instagram, Flipkart, Uber, PhonePe and Hotstar, with interactive widgets and 25 diagrams.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- COMMUNICATION -->
-    <div class="cat" id="c-communication" style="--c:var(--teal);--cs:var(--teal-soft)"
-         data-name="Communication"
-         data-tip="How the pieces actually talk. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming and debuggability differently — and picking wrong shows up in your P99."
-         data-keywords="communication rest grpc graphql http websockets protocols apis network ip tcp udp tls ssl https http2 http/2 http3 http/3 quic dns kafka rabbitmq amqp handshake multiplexing head-of-line blocking connection pooling framing mtls sync async instagram whatsapp paypal amazon">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">⇄</div>
-        <div class="cat-title">
-          <h2>Communication</h2>
-          <p>REST, gRPC, GraphQL, WebSockets — how services talk, and when each protocol is the right choice.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/network-protocols/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Network Protocols — From the Wire to Spring Boot <span class="arrow">→</span> <span class="badge">New</span></div>
-            <div class="doc-desc">Two tabs, 21 diagrams — IP, TCP, UDP, TLS 1.3, HTTP/2, HTTP/3 + QUIC, WebSockets, DNS, gRPC, Kafka and RabbitMQ traced through Instagram, WhatsApp, PayPal and Amazon — then connection handling, frame processing and multiplexing implemented in Spring Boot.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- MICROSERVICES -->
-    <div class="cat" id="c-microservices" style="--c:var(--accent);--cs:var(--accent-soft)"
-         data-name="Microservices"
-         data-tip="Where the six components become deployable units. Clear boundaries, own data, own failure modes — held together by sagas, circuit breakers and the outbox pattern."
-         data-keywords="microservices patterns saga circuit breaker service discovery kubernetes design spring boot dependency injection ioc auto-configuration spring mvc jpa aop transactions caching resiliency retry rate limiter kafka rabbitmq spring security actuator outbox amazon instagram youtube whatsapp">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">▦</div>
-        <div class="cat-title">
-          <h2>Microservices</h2>
-          <p>Design patterns for splitting a system into services — sagas, circuit breakers, discovery, outbox — and when NOT to.</p>
-        </div>
-        <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/Microservices-Design-Pattern/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Microservices Design Patterns <span class="arrow">→</span></div>
-            <div class="doc-desc">The core patterns interview panels and production systems care about — Circuit Breaker, Saga, Outbox, Service Discovery, and more.</div>
-          </div>
-        </a>
-        <a class="doc" href="https://purusottam11.github.io/spring-boot-beginner-to-pro/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Spring Boot — Core Components, Explained with Amazon, Instagram, YouTube &amp; WhatsApp <span class="arrow">→</span></div>
-            <div class="doc-desc">45 chapters, basic to advanced — DI, MVC, JPA, AOP, transactions, caching, resiliency (circuit breakers, retries, sagas), Kafka, Spring Security, Actuator, and cloud databases — each one taught through a real feature in Amazon, Instagram, YouTube, or WhatsApp.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- DOCKER & KUBERNETES -->
-    <div class="cat" id="c-devops" style="--c:var(--sky);--cs:var(--sky-soft)"
-         data-name="Docker &amp; Kubernetes"
-         data-tip="Packaging once and running it the same way everywhere. Pods, deployments, ingress, probes and autoscaling are what turn a design into something that survives a flash sale."
-         data-keywords="docker kubernetes k8s containers pods deployments services helm ingress orchestration devops shopkart ecommerce dockerfile compose eks alb aws hpa autoscaling probes statefulset rbac networkpolicy gitops service mesh big billion day flash sale">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">⎈</div>
-        <div class="cat-title">
-          <h2>Docker &amp; Kubernetes</h2>
-          <p>Containers, images, pods, deployments, services, and ingress — packaging apps once and running them the same way everywhere.</p>
-        </div>
-        <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/Docker-Kubernetes/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Docker &amp; Kubernetes — Shipping ShopKart to Production <span class="arrow">→</span></div>
-            <div class="doc-desc">26 chapters from "works on my machine" to a Big Billion Day sale: Dockerfiles, Compose, Pods to HPA, EKS/ALB system design, self-healing, and a million-user autoscaling case study — one e-commerce story throughout.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
-    <!-- CLOUD -->
-    <div class="cat" id="c-cloud" style="--c:var(--slate);--cs:var(--slate-soft)"
-         data-name="Cloud (AWS &amp; Azure)"
-         data-tip="Someone else runs the hardware. Managed databases, queues, secrets, identity and observability let you operate a system instead of babysitting servers."
-         data-keywords="cloud aws azure gcp ec2 s3 lambda vpc iam terraform devops infrastructure rds dynamodb sqs sns kinesis msk kms cloudwatch xray eks ecs cloudfront route53 zomato spring boot 4 java 25">
-      <button class="cat-head" aria-expanded="false">
-        <div class="icon">☁</div>
-        <div class="cat-title">
-          <h2>Cloud (AWS &amp; Azure)</h2>
-          <p>Core services, networking, IAM, cost, and infrastructure-as-code — for engineers who ship on the two big clouds.</p>
-        </div>
-        <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
-      <div class="cat-body"><div class="cat-body-inner">
-        <a class="doc" href="https://purusottam11.github.io/AWS-spring-boot/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">AWS for Backend Engineers — Scaling Zomato with Spring Boot 4 <span class="arrow">→</span></div>
-            <div class="doc-desc">~18 AWS services explained by scaling a food-delivery app: EC2 to EKS, RDS/Aurora, DynamoDB, ElastiCache, SQS/SNS/Kinesis, IAM/KMS, CloudWatch/X-Ray — each paired with a Spring Boot 4 + Java 25 implementation and a full Zomato architecture case study.</div>
-          </div>
-        </a>
-        <a class="doc" href="https://purusottam11.github.io/azure-spring-boot/" target="_blank" rel="noopener">
-          <div class="dot"></div>
-          <div class="doc-body">
-            <div class="doc-title">Azure for Backend Engineers — Scaling Zomato with Spring Boot 4 <span class="arrow">→</span></div>
-            <div class="doc-desc">The Azure companion to the AWS guide — the same food-delivery scaling story, this time through Azure's core services and a Spring Boot 4 + Java 25 implementation for each.</div>
-          </div>
-        </a>
-      </div></div>
-    </div>
-
+<section id="library"><div class="wrap">
+  <div class="sec-top">
+    <span class="sec-num">02</span>
+    <h2>The library</h2>
+    <p>Nine areas, twelve deep dives. Internals first, then a hands-on Spring Boot implementation.</p>
   </div>
-</div></main>
+  <div class="bento" id="bento"></div>
+</div></section>
+
+<section id="ship"><div class="wrap">
+  <div class="sec-top">
+    <span class="sec-num">03</span>
+    <h2>Ship &amp; operate</h2>
+    <p>Where the six become deployable units — services, containers, and someone else's hardware.</p>
+  </div>
+  <div class="bento" id="bento2"></div>
+</div></section>
 
 <footer><div class="wrap">
-  <span>© 2026 · Purusottam Mohapatra</span>
-  <span class="mono">Notes are living documents</span>
-  <button class="totop" id="toTop"><span>↑</span> Back to top</button>
+  <div class="foot-in">
+    <span class="m">© 2026 · Purusottam Mohapatra</span>
+    <span class="m">Notes are living documents</span>
+    <button class="m" id="toTop" style="color:var(--brand)">↑ Back to top</button>
+  </div>
+  <div class="wordmark">System Design</div>
 </div></footer>
 
-<div class="tip" id="tip" role="tooltip">
-  <div class="t-label" id="tipLabel"></div>
-  <p id="tipText"></p>
+</div></div>
+
+<div class="tip" id="tip"><div class="lab" id="tipLab"></div><p id="tipTxt"></p></div>
+
+<div class="scrim" id="scrim">
+  <div class="palette" role="dialog" aria-modal="true">
+    <div class="pal-in">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="palInput" placeholder="Search guides, protocols, topics…" autocomplete="off" spellcheck="false">
+      <kbd>ESC</kbd>
+    </div>
+    <div class="pal-list" id="palList"></div>
+  </div>
 </div>
+
+<noscript>
+  <div style="padding:40px 28px;max-width:800px;margin:0 auto">
+    <h2 style="font-family:var(--display)">All guides</h2>
+    <ul style="margin-top:16px;line-height:2">
+      <li><a href="https://purusottam11.github.io/mongodb-internals-and-spring-boot-implementation">MongoDB Internals</a></li>
+      <li><a href="https://purusottam11.github.io/dynamoDb-internals-and-spring-boot-implementation/">DynamoDB Internals</a></li>
+      <li><a href="https://purusottam11.github.io/Redis-Internals-and-spring-boot-implementation/">Redis Internals</a></li>
+      <li><a href="https://purusottam11.github.io/amazon-system-design/">Amazon System Design</a></li>
+      <li><a href="https://purusottam11.github.io/apache-kafka-internals-and-spring-boot-implementation">Apache Kafka Internals</a></li>
+      <li><a href="https://purusottam11.github.io/multithreading/">Multithreading, Visually</a></li>
+      <li><a href="https://purusottam11.github.io/network-protocols/">Network Protocols</a></li>
+      <li><a href="https://purusottam11.github.io/Microservices-Design-Pattern/">Microservices Design Patterns</a></li>
+      <li><a href="https://purusottam11.github.io/spring-boot-beginner-to-pro/">Spring Boot Core Components</a></li>
+      <li><a href="https://purusottam11.github.io/Docker-Kubernetes/">Docker &amp; Kubernetes</a></li>
+      <li><a href="https://purusottam11.github.io/AWS-spring-boot/">AWS for Backend Engineers</a></li>
+      <li><a href="https://purusottam11.github.io/azure-spring-boot/">Azure for Backend Engineers</a></li>
+    </ul>
+  </div>
+</noscript>
 
 <script>
 (function(){
-  'use strict';
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+'use strict';
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform);
 
-  /* ================= THEME ================= */
-  const root = document.documentElement;
-  const themeBtn = document.getElementById('themeBtn');
-  const sunPath = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
-  const moonPath = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+/* ═══════ DATA ═══════ */
+const DATA = [
+  { id:'database', h:210, glyph:'◆', name:'Database', tag:'Store', wide:true,
+    sub:'Storage engines, indexing, sharding, replication, transactions.',
+    tip:'Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold and how fast you find a single row in it.',
+    long:'Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold and how quickly you can find a single row inside it. Choose the partition key wrong here and no amount of caching rescues you three layers later.',
+    kw:'mongodb dynamodb sql nosql cassandra wiredtiger replica set sharding partition key gsi single table design transactions',
+    guides:[
+      { t:'MongoDB Internals & Spring Boot Implementation', u:'https://purusottam11.github.io/mongodb-internals-and-spring-boot-implementation',
+        d:'Document model, WiredTiger, replica sets, sharding, transactions — with a full QuickBite Spring Boot build-out.' },
+      { t:'DynamoDB Internals & Spring Boot Implementation', u:'https://purusottam11.github.io/dynamoDb-internals-and-spring-boot-implementation/',
+        d:'Partition keys, GSIs, capacity modes, streams, single-table design — with a ShopSwift e-commerce capstone.' }
+    ]},
+  { id:'caching', h:358, glyph:'◉', name:'Caching', tag:'Skip work',
+    sub:'Redis, CDN edges, invalidation, latency budgets.',
+    tip:'The cheapest request is the one that never reaches your database. Caches trade a little staleness for a lot of latency — invalidation is the hard part.',
+    long:'The cheapest request is the one that never reaches your database. Redis and CDN edges cut reads from tens of milliseconds to under one — the real engineering is deciding how stale is acceptable and when to invalidate.',
+    kw:'redis memcached cdn ttl eviction lru pub/sub streams geo search cache-aside write-through atomic counters cluster persistence',
+    guides:[
+      { t:'Redis Internals & Spring Boot Implementation', u:'https://purusottam11.github.io/Redis-Internals-and-spring-boot-implementation/',
+        d:'In-memory data structures, TTL, pub/sub, streams, search, geo, atomic counters, cluster & persistence — Spring Boot 4 + Java 25.' }
+    ]},
+  { id:'scaling', h:152, glyph:'▲', name:'Scaling', tag:'Add capacity',
+    sub:'Load balancers, partitioning, capacity, P99 latency.',
+    tip:'One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial you can turn.',
+    long:'One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial you can turn — and shift the conversation from average latency to the P99 you actually have to defend.',
+    kw:'horizontal vertical load balancer sharding partitioning capacity flash sale skip locked 100m users p99 latency amazon ecommerce',
+    guides:[
+      { t:'Amazon System Design — 100 to 100M Users', u:'https://purusottam11.github.io/amazon-system-design/',
+        d:'A founder–CTO story of scaling e-commerce: leaving Shopify, flash-sale locking with SKIP LOCKED, microservices, Kafka order flows, vector-DB recommendations.' }
+    ]},
+  { id:'delegation', h:38, glyph:'↯', name:'Delegation', tag:'Do it later',
+    sub:'Brokers, event streaming, task queues, outbox.',
+    tip:'Not everything belongs in the request path. Queues and event logs hand slow work to a broker so the user gets an answer now.',
+    long:'Not everything belongs in the request path. Queues and event logs hand slow work to a broker, so the user gets an answer in milliseconds while emails, invoices and analytics happen reliably afterwards.',
+    kw:'kafka rabbitmq queue event streaming pub sub broker consumer group exactly once dlt schema registry outbox partitions',
+    guides:[
+      { t:'Apache Kafka Internals & Spring Boot Implementation', u:'https://purusottam11.github.io/apache-kafka-internals-and-spring-boot-implementation',
+        d:'Brokers, partitions, consumer groups, exactly-once, DLT, Streams, Schema Registry — with a full QuickBite event platform.' }
+    ]},
+  { id:'concurrency', h:268, glyph:'∞', name:'Concurrency', tag:'Share safely',
+    sub:'Threads, locks, atomics, the JVM memory model.',
+    tip:'Thousands of requests touching the same row at once. Threads, locks and atomics decide whether that is an accurate inventory count or an expensive bug.',
+    long:'Thousands of requests touching the same row at the same instant. Threads, locks, atomics and the memory model decide whether that is an accurate inventory count or the most expensive bug of the quarter.',
+    kw:'threads locks race conditions multithreading virtual threads java 21 platform threads carrier executorservice thread pool deadlock volatile atomic cas jmm happens-before context switch false sharing structured concurrency pinning instagram flipkart uber phonepe hotstar',
+    guides:[
+      { t:'Multithreading, Visually — CPU Cores to Virtual Threads', u:'https://purusottam11.github.io/multithreading/', badge:'New',
+        d:'28 chapters — cores and context switching, race conditions, locks, the memory model, deadlock, thread pools, and virtual threads with pinning. 25 diagrams.' }
+    ]},
+  { id:'communication', h:182, glyph:'⇄', name:'Communication', tag:'Talk', wide:true,
+    sub:'TCP, TLS, HTTP/2, HTTP/3, gRPC, WebSockets.',
+    tip:'How the pieces actually talk. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming and debuggability differently.',
+    long:'How the pieces actually talk to each other. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming ability and debuggability differently — and choosing wrong shows up quietly in your tail latency.',
+    kw:'rest grpc graphql http websockets protocols apis network ip tcp udp tls ssl https http2 http3 quic dns amqp handshake multiplexing head-of-line blocking connection pooling framing mtls sync async',
+    guides:[
+      { t:'Network Protocols — From the Wire to Spring Boot', u:'https://purusottam11.github.io/network-protocols/', badge:'New',
+        d:'21 diagrams — IP, TCP, UDP, TLS 1.3, HTTP/2, HTTP/3 + QUIC, WebSockets, DNS, gRPC, Kafka and RabbitMQ, then connection handling and frame processing in Spring Boot.' }
+    ]}
+];
 
-  function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
-  function read(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+const SHIP = [
+  { id:'microservices', h:16, glyph:'▦', name:'Microservices', tag:'Split', wide:true,
+    sub:'Sagas, circuit breakers, discovery, outbox — and when not to.',
+    tip:'Where the six components become deployable units. Clear boundaries, own data, own failure modes — held together by sagas, circuit breakers and outbox.',
+    kw:'microservices patterns saga circuit breaker service discovery spring boot dependency injection ioc mvc jpa aop transactions resiliency retry rate limiter spring security actuator outbox',
+    guides:[
+      { t:'Microservices Design Patterns', u:'https://purusottam11.github.io/Microservices-Design-Pattern/',
+        d:'The core patterns interview panels and production systems care about — Circuit Breaker, Saga, Outbox, Service Discovery, and more.' },
+      { t:'Spring Boot — Core Components, via Amazon, Instagram, YouTube & WhatsApp', u:'https://purusottam11.github.io/spring-boot-beginner-to-pro/',
+        d:'45 chapters — DI, MVC, JPA, AOP, transactions, caching, resiliency, Kafka, Spring Security, Actuator, cloud databases — each through a real product feature.' }
+    ]},
+  { id:'devops', h:200, glyph:'⎈', name:'Docker & Kubernetes', tag:'Package',
+    sub:'Images, pods, deployments, ingress, autoscaling.',
+    tip:'Packaging once and running it the same way everywhere. Pods, probes and autoscaling turn a design into something that survives a flash sale.',
+    kw:'docker kubernetes k8s containers pods deployments helm ingress orchestration dockerfile compose eks alb hpa autoscaling probes statefulset rbac gitops service mesh big billion day',
+    guides:[
+      { t:'Docker & Kubernetes — Shipping ShopKart to Production', u:'https://purusottam11.github.io/Docker-Kubernetes/',
+        d:'26 chapters from "works on my machine" to a Big Billion Day sale: Dockerfiles, Compose, Pods to HPA, EKS/ALB design, self-healing, a million-user autoscaling study.' }
+    ]},
+  { id:'cloud', h:224, glyph:'☁', name:'Cloud (AWS & Azure)', tag:'Operate', wide:true,
+    sub:'Managed services, networking, IAM, observability, cost.',
+    tip:'Someone else runs the hardware. Managed databases, queues, secrets, identity and observability let you operate a system instead of babysitting servers.',
+    kw:'cloud aws azure gcp ec2 s3 lambda vpc iam terraform rds dynamodb sqs sns kinesis msk kms cloudwatch xray eks ecs cloudfront route53 zomato',
+    guides:[
+      { t:'AWS for Backend Engineers — Scaling Zomato', u:'https://purusottam11.github.io/AWS-spring-boot/',
+        d:'~18 AWS services by scaling a food-delivery app: EC2 to EKS, RDS/Aurora, DynamoDB, ElastiCache, SQS/SNS/Kinesis, IAM/KMS, CloudWatch/X-Ray — each with Spring Boot 4.' },
+      { t:'Azure for Backend Engineers — Scaling Zomato', u:'https://purusottam11.github.io/azure-spring-boot/',
+        d:'The Azure companion — the same scaling story through Azure core services, with a Spring Boot 4 + Java 25 implementation for each.' }
+    ]}
+];
 
-  function setTheme(t){
-    root.dataset.theme = t;
-    document.getElementById('themeIcon').innerHTML = t === 'dark' ? moonPath : sunPath;
-    store('sd-theme', t);
-  }
-  const saved = read('sd-theme');
-  setTheme(saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-  themeBtn.addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+const ALL = DATA.concat(SHIP);
 
-  /* ================= SIX BLOCKS ================= */
-  const BLOCKS = [
-    { id:'c-database', glyph:'◆', name:'Database', tag:'Store',
-      c:'--blue', cs:'--blue-soft',
-      text:'Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold and how quickly you can find a single row in it. Get the partition key wrong here and no amount of caching saves you later.' },
-    { id:'c-caching', glyph:'◉', name:'Caching', tag:'Skip work',
-      c:'--red', cs:'--red-soft',
-      text:'The cheapest request is the one that never reaches your database. Redis and CDN edges cut reads from tens of milliseconds to under one — the real engineering is deciding how stale is acceptable and when to invalidate.' },
-    { id:'c-scaling', glyph:'▲', name:'Scaling', tag:'Add capacity',
-      c:'--green', cs:'--green-soft',
-      text:'One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial you can turn — and shift the conversation from average latency to the P99 you actually have to defend.' },
-    { id:'c-delegation', glyph:'↯', name:'Delegation', tag:'Do it later',
-      c:'--amber', cs:'--amber-soft',
-      text:'Not everything belongs in the request path. Queues and event logs hand slow work to a broker, so the user gets an answer in milliseconds while emails, invoices and analytics happen reliably afterwards.' },
-    { id:'c-concurrency', glyph:'∞', name:'Concurrency', tag:'Share safely',
-      c:'--purple', cs:'--purple-soft',
-      text:'Thousands of requests touching the same row at the same instant. Threads, locks, atomics and the memory model decide whether that is an accurate inventory count or the most expensive bug of the quarter.' },
-    { id:'c-communication', glyph:'⇄', name:'Communication', tag:'Talk',
-      c:'--teal', cs:'--teal-soft',
-      text:'How the pieces actually talk to each other. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming ability and debuggability differently — and choosing wrong quietly shows up in your tail latency.' }
-  ];
+/* ═══════ THEME ═══════ */
+const root = document.documentElement;
+const SUN = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+const MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+const st = (k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+const rd = k=>{try{return localStorage.getItem(k)}catch(e){return null}};
+function setTheme(t){
+  root.dataset.theme = t;
+  document.getElementById('themeIcon').innerHTML = t==='dark' ? MOON : SUN;
+  st('sd-theme', t);
+}
+setTheme(rd('sd-theme') || 'dark');
+document.getElementById('themeBtn').onclick = ()=> setTheme(root.dataset.theme==='dark'?'light':'dark');
+document.getElementById('kbdHint').textContent = isMac ? '⌘K' : 'Ctrl K';
 
-  const grid = document.getElementById('sixGrid');
-  const panel = document.getElementById('sixPanel');
-  const counts = {};
-  document.querySelectorAll('.cat').forEach(c => {
-    counts[c.id] = c.querySelectorAll('.doc').length;
+/* ═══════ MARQUEE ═══════ */
+const WORDS = ['Kafka','Redis','MongoDB','DynamoDB','HTTP/3 · QUIC','Virtual Threads','Sharding','Circuit Breaker','Kubernetes','gRPC','Saga','Outbox','TLS 1.3','WebSockets','HPA','P99 Latency','Consistent Hashing','Event Sourcing'];
+document.getElementById('mq').innerHTML = [...WORDS,...WORDS].map(w=>`<span>${w}</span>`).join('');
+
+/* ═══════ EXPLORER ═══════ */
+const rail = document.getElementById('rail'), stage = document.getElementById('stage');
+rail.innerHTML = DATA.map((b,i)=>`
+  <button class="blk${i===0?' on':''}" data-i="${i}" style="--h:${b.h}">
+    <div class="g">${b.glyph}</div>
+    <div class="nm">${b.name}</div>
+    <div class="ct">${b.guides.length} guide${b.guides.length===1?'':'s'}</div>
+  </button>`).join('');
+
+let cur = -1, ht;
+function paint(i){
+  if(i===cur) return;
+  cur = i;
+  const b = DATA[i];
+  stage.style.setProperty('--h', b.h);
+  stage.innerHTML = `
+    <div class="stage-txt pop">
+      <h3>${b.name} <em>${b.tag}</em></h3>
+      <p>${b.long}</p>
+      <a class="stage-go" href="#card-${b.id}" data-jump="${b.id}">Open ${b.guides.length} guide${b.guides.length===1?'':'s'} <span>→</span></a>
+    </div>
+    <div class="stage-mark pop">${b.glyph}</div>`;
+  rail.querySelectorAll('.blk').forEach((el,k)=>el.classList.toggle('on',k===i));
+}
+paint(0);
+rail.addEventListener('mouseover', e=>{
+  const b = e.target.closest('.blk'); if(!b) return;
+  clearTimeout(ht); ht = setTimeout(()=>paint(+b.dataset.i), 55);
+});
+rail.addEventListener('click', e=>{
+  const b = e.target.closest('.blk'); if(!b) return;
+  paint(+b.dataset.i);
+});
+stage.addEventListener('click', e=>{
+  const j = e.target.closest('[data-jump]'); if(!j) return;
+  e.preventDefault(); jump(j.dataset.jump);
+});
+
+function jump(id){
+  const el = document.getElementById('card-'+id); if(!el) return;
+  window.scrollTo({top: el.getBoundingClientRect().top + scrollY - 90, behavior: reduced?'auto':'smooth'});
+  el.animate([{boxShadow:'0 0 0 0 hsl('+el.style.getPropertyValue('--h')+' 78% 62% / .5)'},
+              {boxShadow:'0 0 0 10px hsl('+el.style.getPropertyValue('--h')+' 78% 62% / 0)'}],
+             {duration:1200, easing:'ease-out'});
+}
+
+/* ═══════ BENTO ═══════ */
+function cardHTML(c){
+  return `<article class="card${c.wide?' wide':''}" id="card-${c.id}" style="--h:${c.h}" data-tip="${c.tip.replace(/"/g,'&quot;')}" data-name="${c.name}">
+    <div class="card-top">
+      <div class="ic">${c.glyph}</div>
+      <div style="min-width:0">
+        <h3>${c.name}</h3>
+        <div class="sub">${c.sub}</div>
+      </div>
+      <span class="tally">${c.guides.length}</span>
+    </div>
+    <div class="links">
+      ${c.guides.map(g=>`
+        <a class="lnk" href="${g.u}" target="_blank" rel="noopener">
+          <span class="pip"></span>
+          <span style="flex:1;min-width:0">
+            <span class="t">${g.t} ${g.badge?`<span class="new">${g.badge}</span>`:''} <span class="ar">↗</span></span>
+            <span class="d">${g.d}</span>
+          </span>
+        </a>`).join('')}
+    </div>
+  </article>`;
+}
+document.getElementById('bento').innerHTML  = DATA.map(cardHTML).join('');
+document.getElementById('bento2').innerHTML = SHIP.map(cardHTML).join('');
+
+/* ═══════ SPOTLIGHT + TOOLTIP ═══════ */
+const tip = document.getElementById('tip'), tipLab = document.getElementById('tipLab'), tipTxt = document.getElementById('tipTxt');
+let tipOn = false;
+const canHover = !matchMedia('(hover:none)').matches;
+
+document.querySelectorAll('.card').forEach(card=>{
+  card.addEventListener('mousemove', e=>{
+    const r = card.getBoundingClientRect();
+    card.style.setProperty('--mx', (e.clientX - r.left)+'px');
+    card.style.setProperty('--my', (e.clientY - r.top)+'px');
+    if(tipOn) place(e);
   });
-
-  grid.innerHTML = BLOCKS.map((b,i) => `
-    <button class="blk${i===0?' on':''}" data-i="${i}" style="--c:var(${b.c});--cs:var(${b.cs})">
-      <div class="g">${b.glyph}</div>
-      <div class="nm">${b.name}</div>
-      <div class="ct">${counts[b.id] || 0} guide${counts[b.id]===1?'':'s'}</div>
-    </button>`).join('');
-
-  let activeBlock = 0, hoverTimer = null;
-
-  function paintPanel(i){
-    const b = BLOCKS[i];
-    panel.style.setProperty('--c', `var(${b.c})`);
-    panel.style.setProperty('--cs', `var(${b.cs})`);
-    panel.innerHTML = `
-      <div class="bar"></div>
-      <div class="txt fadein">
-        <h3>${b.name} <em>${b.tag}</em></h3>
-        <p>${b.text}</p>
-        <button class="go" data-goto="${b.id}">Open ${b.name} guides <span>→</span></button>
-      </div>`;
-  }
-  paintPanel(0);
-
-  function selectBlock(i){
-    if (i === activeBlock) return;
-    activeBlock = i;
-    grid.querySelectorAll('.blk').forEach((el,k) => el.classList.toggle('on', k === i));
-    paintPanel(i);
-  }
-
-  grid.addEventListener('mouseover', e => {
-    const b = e.target.closest('.blk'); if (!b) return;
-    clearTimeout(hoverTimer);
-    hoverTimer = setTimeout(() => selectBlock(+b.dataset.i), 60);
+  card.addEventListener('mouseenter', e=>{
+    if(!canHover) return;
+    tipLab.textContent = card.dataset.name;
+    tipTxt.textContent = card.dataset.tip;
+    tip.style.setProperty('--h', card.style.getPropertyValue('--h'));
+    tip.classList.add('show'); tipOn = true; place(e);
   });
-  grid.addEventListener('click', e => {
-    const b = e.target.closest('.blk'); if (!b) return;
-    selectBlock(+b.dataset.i);
+  card.addEventListener('mouseleave', ()=>{ tip.classList.remove('show'); tipOn = false; });
+});
+function place(e){
+  const pad=14, w=tip.offsetWidth, h=tip.offsetHeight;
+  let x=e.clientX+20, y=e.clientY+20;
+  if(x+w+pad>innerWidth)  x=e.clientX-w-20;
+  if(y+h+pad>innerHeight) y=e.clientY-h-20;
+  tip.style.left=Math.max(pad,x)+'px'; tip.style.top=Math.max(pad,y)+'px';
+}
+addEventListener('scroll', ()=>{ if(tipOn){tip.classList.remove('show');tipOn=false;} }, {passive:true});
+
+/* ═══════ COMMAND PALETTE ═══════ */
+const scrim = document.getElementById('scrim'), palInput = document.getElementById('palInput'), palList = document.getElementById('palList');
+const INDEX = [];
+ALL.forEach(c=>{
+  INDEX.push({kind:'Area', h:c.h, glyph:c.glyph, title:c.name, sub:c.sub, id:c.id, hay:(c.name+' '+c.sub+' '+c.kw).toLowerCase()});
+  c.guides.forEach(g=>INDEX.push({kind:'Guide', h:c.h, glyph:c.glyph, title:g.t, sub:c.name+' · '+g.d, url:g.u, hay:(g.t+' '+g.d+' '+c.name+' '+c.kw).toLowerCase()}));
+});
+let sel = 0, results = [];
+
+function renderPal(q){
+  q = q.trim().toLowerCase();
+  results = q ? INDEX.filter(i=>i.hay.includes(q)) : INDEX.slice();
+  sel = 0;
+  if(!results.length){ palList.innerHTML = '<div class="pal-empty">No match. Try “kafka”, “http”, “threads”…</div>'; return; }
+  let html = '', lastKind = '';
+  results.forEach((r,i)=>{
+    if(r.kind!==lastKind){ html += `<div class="pal-group">${r.kind}s</div>`; lastKind = r.kind; }
+    html += `<div class="pal-item${i===0?' sel':''}" data-i="${i}" style="--h:${r.h}">
+      <span class="pi">${r.glyph}</span>
+      <span class="pt"><b>${r.title}</b><small>${r.sub}</small></span>
+      <span class="go">↵</span></div>`;
   });
-  panel.addEventListener('click', e => {
-    const go = e.target.closest('[data-goto]'); if (!go) return;
-    jumpTo(go.dataset.goto);
+  palList.innerHTML = html;
+}
+function openPal(){
+  scrim.classList.add('open'); palInput.value=''; renderPal('');
+  setTimeout(()=>palInput.focus(), 40);
+  document.body.style.overflow='hidden';
+}
+function closePal(){ scrim.classList.remove('open'); document.body.style.overflow=''; }
+function activate(i){
+  const r = results[i]; if(!r) return;
+  closePal();
+  if(r.url) window.open(r.url,'_blank','noopener');
+  else setTimeout(()=>jump(r.id), 60);
+}
+function moveSel(d){
+  if(!results.length) return;
+  sel = (sel + d + results.length) % results.length;
+  palList.querySelectorAll('.pal-item').forEach((el,i)=>el.classList.toggle('sel', i===sel));
+  const el = palList.querySelector('.pal-item.sel');
+  if(el) el.scrollIntoView({block:'nearest'});
+}
+document.getElementById('openPal').onclick = openPal;
+document.getElementById('openPal2').onclick = openPal;
+palInput.addEventListener('input', ()=>renderPal(palInput.value));
+palList.addEventListener('click', e=>{
+  const it = e.target.closest('.pal-item'); if(!it) return;
+  activate(+it.dataset.i);
+});
+palList.addEventListener('mousemove', e=>{
+  const it = e.target.closest('.pal-item'); if(!it) return;
+  sel = +it.dataset.i;
+  palList.querySelectorAll('.pal-item').forEach((el,i)=>el.classList.toggle('sel', i===sel));
+});
+scrim.addEventListener('click', e=>{ if(e.target===scrim) closePal(); });
+addEventListener('keydown', e=>{
+  const open = scrim.classList.contains('open');
+  if((e.key==='k'||e.key==='K') && (e.metaKey||e.ctrlKey)){ e.preventDefault(); open?closePal():openPal(); return; }
+  if(e.key==='/' && !open && !/INPUT|TEXTAREA/.test(document.activeElement.tagName)){ e.preventDefault(); openPal(); return; }
+  if(!open) return;
+  if(e.key==='Escape') closePal();
+  else if(e.key==='ArrowDown'){ e.preventDefault(); moveSel(1); }
+  else if(e.key==='ArrowUp'){ e.preventDefault(); moveSel(-1); }
+  else if(e.key==='Enter'){ e.preventDefault(); activate(sel); }
+});
+
+/* ═══════ SCROLL + COUNTERS ═══════ */
+const bar = document.getElementById('bar');
+let tick = false;
+addEventListener('scroll', ()=>{
+  if(tick) return; tick = true;
+  requestAnimationFrame(()=>{
+    const h = document.body.scrollHeight - innerHeight;
+    bar.style.width = (h>0 ? scrollY/h*100 : 0)+'%';
+    tick = false;
   });
+}, {passive:true});
 
-  function jumpTo(id){
-    const cat = document.getElementById(id); if (!cat) return;
-    openCat(cat, true);
-    const y = cat.getBoundingClientRect().top + window.scrollY - 76;
-    window.scrollTo({ top:y, behavior: reduced ? 'auto' : 'smooth' });
-    cat.animate(
-      [{ boxShadow:'0 0 0 0 var(--cs)' }, { boxShadow:'0 0 0 8px var(--cs)' }, { boxShadow:'0 0 0 0 var(--cs)' }],
-      { duration:1100, easing:'ease-out' }
-    );
-  }
+if('IntersectionObserver' in window && !reduced){
+  const io = new IntersectionObserver((es,o)=>{
+    es.forEach((en,i)=>{ if(en.isIntersecting){ setTimeout(()=>en.target.classList.add('in'), i*70); o.unobserve(en.target); } });
+  }, {rootMargin:'0px 0px -50px 0px', threshold:.05});
+  document.querySelectorAll('.card').forEach(c=>io.observe(c));
+} else document.querySelectorAll('.card').forEach(c=>c.classList.add('in'));
 
-  /* ================= ACCORDION ================= */
-  const cats = [...document.querySelectorAll('.cat')];
+document.querySelectorAll('[data-count]').forEach(el=>{
+  if(el.dataset.text){ el.textContent = el.dataset.text; el.style.fontSize='22px'; return; }
+  const target = +el.dataset.count, suffix = el.dataset.suffix || '';
+  if(reduced){ el.textContent = target+suffix; return; }
+  let n = 0, step = Math.max(1, Math.round(target/34));
+  const t = setInterval(()=>{
+    n += step;
+    if(n>=target){ n = target; clearInterval(t); }
+    el.textContent = n+suffix;
+  }, 26);
+});
 
-  function openCat(cat, force){
-    const body = cat.querySelector('.cat-body');
-    const head = cat.querySelector('.cat-head');
-    const isOpen = cat.classList.contains('open');
-    if (isOpen && force) return;
-    if (isOpen){
-      body.style.height = body.scrollHeight + 'px';
-      requestAnimationFrame(() => { body.style.height = '0px'; });
-      cat.classList.remove('open');
-      head.setAttribute('aria-expanded','false');
-    } else {
-      cat.classList.add('open');
-      head.setAttribute('aria-expanded','true');
-      body.style.height = body.scrollHeight + 'px';
-      body.addEventListener('transitionend', function done(ev){
-        if (ev.propertyName !== 'height') return;
-        if (cat.classList.contains('open')) body.style.height = 'auto';
-        body.removeEventListener('transitionend', done);
-      });
-    }
-  }
-
-  cats.forEach(cat => {
-    cat.querySelector('.cat-head').addEventListener('click', () => openCat(cat));
-  });
-
-  document.getElementById('expandBtn').addEventListener('click', () => {
-    cats.forEach(c => { if (c.style.display !== 'none') openCat(c, true); });
-  });
-  document.getElementById('collapseBtn').addEventListener('click', () => {
-    cats.forEach(c => { if (c.classList.contains('open')) openCat(c); });
-  });
-
-  /* ================= HOVER TOOLTIP ================= */
-  const tip = document.getElementById('tip');
-  const tipLabel = document.getElementById('tipLabel');
-  const tipText = document.getElementById('tipText');
-  let tipOn = false;
-
-  function showTip(el, label, text, color, soft){
-    tipLabel.textContent = label;
-    tipText.textContent = text;
-    tip.style.setProperty('--c', color);
-    tip.classList.add('show');
-    tipOn = true;
-  }
-  function hideTip(){ tip.classList.remove('show'); tipOn = false; }
-
-  function place(e){
-    if (!tipOn) return;
-    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
-    let x = e.clientX + 18, y = e.clientY + 18;
-    if (x + w + pad > window.innerWidth)  x = e.clientX - w - 18;
-    if (y + h + pad > window.innerHeight) y = e.clientY - h - 18;
-    tip.style.left = Math.max(pad, x) + 'px';
-    tip.style.top  = Math.max(pad, y) + 'px';
-  }
-
-  cats.forEach(cat => {
-    const head = cat.querySelector('.cat-head');
-    const name = cat.dataset.name.replace('&amp;','&');
-    const color = getComputedStyle(cat).getPropertyValue('--c');
-    head.addEventListener('mouseenter', e => {
-      if (window.matchMedia('(hover:none)').matches) return;
-      showTip(head, name, cat.dataset.tip, color);
-      place(e);
+/* magnetic buttons */
+if(canHover && !reduced){
+  document.querySelectorAll('.btn').forEach(b=>{
+    b.addEventListener('mousemove', e=>{
+      const r = b.getBoundingClientRect();
+      b.style.transform = `translate(${(e.clientX-r.left-r.width/2)*.14}px, ${(e.clientY-r.top-r.height/2)*.22}px)`;
     });
-    head.addEventListener('mousemove', place);
-    head.addEventListener('mouseleave', hideTip);
+    b.addEventListener('mouseleave', ()=>{ b.style.transform=''; });
   });
-  window.addEventListener('scroll', () => { if (tipOn) hideTip(); }, { passive:true });
+}
 
-  /* ================= SEARCH ================= */
-  const input = document.getElementById('searchInput');
-  const empty = document.getElementById('empty');
-  const visibleCount = document.getElementById('visibleCount');
-  const docCount = document.getElementById('docCount');
-  const clearBtn = document.getElementById('clearBtn');
-  const kbd = document.getElementById('kbd');
-
-  // snapshot original markup so highlighting is reversible
-  const marks = [...document.querySelectorAll('.doc-title, .doc-desc, .cat-title h2, .cat-title p')];
-  marks.forEach(el => el.dataset.orig = el.innerHTML);
-
-  const norm = s => (s || '').toLowerCase().trim();
-  const esc  = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  function highlight(q){
-    marks.forEach(el => {
-      const orig = el.dataset.orig;
-      if (!q){ el.innerHTML = orig; return; }
-      // only replace inside text nodes, never inside tags
-      el.innerHTML = orig.replace(
-        new RegExp('(?![^<]*>)(' + esc(q) + ')', 'gi'),
-        '<mark>$1</mark>'
-      );
-    });
-  }
-
-  function runSearch(){
-    const q = norm(input.value);
-    let shownCats = 0, shownDocs = 0;
-
-    cats.forEach(cat => {
-      const hay = norm(cat.dataset.name + ' ' + cat.dataset.keywords + ' ' +
-                       cat.dataset.tip + ' ' + cat.querySelector('.cat-body-inner').textContent);
-      const hit = !q || hay.includes(q);
-      cat.style.display = hit ? '' : 'none';
-      if (hit){
-        shownCats++;
-        shownDocs += cat.querySelectorAll('.doc').length;
-        if (q) openCat(cat, true);
-      } else if (cat.classList.contains('open')){
-        cat.classList.remove('open');
-        cat.querySelector('.cat-body').style.height = '0px';
-        cat.querySelector('.cat-head').setAttribute('aria-expanded','false');
-      }
-    });
-
-    highlight(q);
-    visibleCount.textContent = shownCats;
-    docCount.textContent = shownDocs;
-    empty.classList.toggle('show', shownCats === 0);
-    clearBtn.classList.toggle('show', !!q);
-    kbd.classList.toggle('hide', !!q);
-
-    // re-measure open bodies after highlight changes their height
-    cats.forEach(c => {
-      if (c.classList.contains('open') && c.style.display !== 'none'){
-        c.querySelector('.cat-body').style.height = 'auto';
-      }
-    });
-  }
-
-  let t;
-  input.addEventListener('input', () => { clearTimeout(t); t = setTimeout(runSearch, 90); });
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Escape'){ input.value = ''; runSearch(); input.blur(); }
-  });
-  clearBtn.addEventListener('click', () => { input.value = ''; runSearch(); input.focus(); });
-
-  function focusSearch(){
-    input.scrollIntoView({ block:'center', behavior: reduced ? 'auto' : 'smooth' });
-    setTimeout(() => input.focus(), reduced ? 0 : 260);
-  }
-  document.getElementById('searchJump').addEventListener('click', focusSearch);
-  document.addEventListener('keydown', e => {
-    if (e.key === '/' && document.activeElement !== input && !e.metaKey && !e.ctrlKey){
-      e.preventDefault(); focusSearch();
-    }
-  });
-
-  /* ================= SCROLL FX ================= */
-  const topbar = document.getElementById('topbar');
-  const progress = document.getElementById('progress');
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      const y = window.scrollY;
-      topbar.classList.toggle('stuck', y > 8);
-      const h = document.body.scrollHeight - window.innerHeight;
-      progress.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
-      ticking = false;
-    });
-  }, { passive:true });
-
-  if ('IntersectionObserver' in window && !reduced){
-    const io = new IntersectionObserver((entries, obs) => {
-      entries.forEach((en, i) => {
-        if (en.isIntersecting){
-          setTimeout(() => en.target.classList.add('in'), i * 55);
-          obs.unobserve(en.target);
-        }
-      });
-    }, { rootMargin:'0px 0px -40px 0px', threshold:.06 });
-    cats.forEach(c => io.observe(c));
-  } else {
-    cats.forEach(c => c.classList.add('in'));
-  }
-
-  document.getElementById('toTop').addEventListener('click', () => {
-    window.scrollTo({ top:0, behavior: reduced ? 'auto' : 'smooth' });
-  });
-
-  /* ================= STATS + DEEP LINK ================= */
-  document.getElementById('stat-cats').textContent = cats.length;
-  document.getElementById('stat-docs').textContent = document.querySelectorAll('.doc').length;
-
-  if (location.hash){
-    const target = document.querySelector(location.hash);
-    if (target && target.classList.contains('cat')){
-      setTimeout(() => jumpTo(target.id), 200);
-    }
-  }
+document.getElementById('toTop').onclick = ()=> scrollTo({top:0, behavior: reduced?'auto':'smooth'});
 })();
 </script>
 </body>

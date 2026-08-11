@@ -1,432 +1,529 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>System Design by Purusottam</title>
-<meta name="description" content="Any scalable system is six building blocks — database, caching, scaling, delegation, concurrency and communication — implemented as microservices, deployed with Docker and Kubernetes, and run on AWS or Azure. Deep-dive notes with Spring Boot implementations.">
+<meta name="description" content="System design is really six components — database, caching, scaling, delegation, concurrency and communication. Deep-dive notes with hands-on Spring Boot implementations.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#FBF8F5;
+    --paper-2:#FFFFFF;
+    --paper-3:#F4EEE8;
     --ink:#231F1C;
     --muted:#6B615A;
     --line:#E7DFD7;
+    --line-soft:#F0E9E2;
     --accent:#C7431F;
     --accent-soft:#FBE9E2;
     --amber:#C97A0A;
     --amber-soft:#FCF1DE;
-    --blue:#2C5FBF;
-    --blue-soft:#E8EFFC;
-    --green:#1E8E5A;
-    --green-soft:#E4F5EC;
-    --red:#BE4040;
-    --red-soft:#FBEAEA;
-    --purple:#6E48B0;
-    --purple-soft:#F0EAFA;
-    --teal:#158D8D;
-    --teal-soft:#DFF1F1;
+    --blue:#2C5FBF;   --blue-soft:#E8EFFC;
+    --green:#1E8E5A;  --green-soft:#E4F5EC;
+    --red:#BE4040;    --red-soft:#FBEAEA;
+    --purple:#6E48B0; --purple-soft:#F0EAFA;
+    --teal:#158D8D;   --teal-soft:#DFF1F1;
+    --slate:#4A5A7A;  --slate-soft:#EAEDF3;
+    --sky:#1F6FB6;    --sky-soft:#E1EEF7;
     --code:#F2ECE6;
-    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+    --shadow-sm:0 2px 8px rgba(35,31,28,.05);
+    --shadow-md:0 8px 24px -10px rgba(35,31,28,.18);
+    --shadow-lg:0 20px 48px -20px rgba(35,31,28,.28);
+    --mono:'JetBrains Mono','SFMono-Regular',Consolas,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+    --serif:'Fraunces',Georgia,'Times New Roman',serif;
+    --r:16px;
   }
+  html[data-theme="dark"]{
+    --paper:#151311;
+    --paper-2:#1D1A17;
+    --paper-3:#252119;
+    --ink:#F2EBE4;
+    --muted:#A2968C;
+    --line:#332D27;
+    --line-soft:#292420;
+    --accent:#F2764C;
+    --accent-soft:#3A231B;
+    --amber:#E5A23C;  --amber-soft:#332715;
+    --blue:#7BA5F0;   --blue-soft:#1B2537;
+    --green:#4FC28B;  --green-soft:#152A20;
+    --red:#E97B7B;    --red-soft:#331D1D;
+    --purple:#A98BE0; --purple-soft:#241C33;
+    --teal:#48C0BE;   --teal-soft:#142B2B;
+    --slate:#93A5C4;  --slate-soft:#1E232D;
+    --sky:#5FAEE8;    --sky-soft:#152534;
+    --code:#252019;
+    --shadow-sm:0 2px 8px rgba(0,0,0,.3);
+    --shadow-md:0 8px 24px -10px rgba(0,0,0,.6);
+    --shadow-lg:0 20px 48px -20px rgba(0,0,0,.8);
+  }
+
   *{box-sizing:border-box;margin:0;padding:0}
-  html{scroll-behavior:smooth}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
   body{
     background:var(--paper);
     color:var(--ink);
-    font-family:Georgia,'Times New Roman',serif;
-    line-height:1.65;
-    font-size:17px;
+    font-family:var(--sans);
+    line-height:1.6;
+    font-size:16px;
     min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    transition:background .35s ease, color .35s ease;
+    overflow-x:hidden;
   }
-  .wrap{max-width:1000px;margin:0 auto;padding:0 24px}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
   a{color:inherit;text-decoration:none}
+  ::selection{background:var(--accent-soft);color:var(--accent)}
 
-  /* ============ HEADER ============ */
-  header{padding:64px 0 40px;border-bottom:1px solid var(--line)}
+  /* ============ AMBIENT ============ */
+  .glow{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(520px circle at 12% -5%, var(--accent-soft), transparent 60%),
+      radial-gradient(600px circle at 88% 8%, var(--amber-soft), transparent 62%);
+    opacity:.75;
+  }
+  html[data-theme="dark"] .glow{opacity:.5}
+
+  /* ============ TOP BAR ============ */
+  .topbar{
+    position:sticky; top:0; z-index:50;
+    backdrop-filter:blur(14px);
+    background:color-mix(in srgb, var(--paper) 82%, transparent);
+    border-bottom:1px solid transparent;
+    transition:border-color .3s, box-shadow .3s;
+  }
+  .topbar.stuck{border-bottom-color:var(--line); box-shadow:var(--shadow-sm)}
+  .topbar-inner{
+    max-width:1080px;margin:0 auto;padding:12px 24px;
+    display:flex;align-items:center;gap:14px;
+  }
+  .logo{display:flex;align-items:center;gap:10px;margin-right:auto;min-width:0}
+  .logo-mark{
+    width:32px;height:32px;border-radius:9px;flex:none;
+    background:linear-gradient(140deg,var(--accent),var(--amber));
+    display:grid;place-items:center;color:#fff;
+    font-family:var(--serif);font-weight:700;font-size:15px;
+  }
+  .logo b{font-family:var(--serif);font-size:15.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
+  .logo span{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+  .iconbtn{
+    width:36px;height:36px;flex:none;border-radius:10px;cursor:pointer;
+    border:1px solid var(--line);background:var(--paper-2);color:var(--muted);
+    display:grid;place-items:center;transition:all .18s;
+  }
+  .iconbtn:hover{color:var(--accent);border-color:var(--accent);transform:translateY(-1px)}
+  .iconbtn svg{width:17px;height:17px}
+  .progress{position:absolute;left:0;bottom:-1px;height:2px;background:var(--accent);width:0;transition:width .1s linear}
+
+  /* ============ HERO ============ */
+  header{position:relative;z-index:1;padding:56px 0 8px}
   .eyebrow{
-    font-family:var(--mono);
-    font-size:12px;
-    letter-spacing:.15em;
-    text-transform:uppercase;
-    color:var(--amber);
-    margin-bottom:14px;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;
+    text-transform:uppercase;color:var(--amber);margin-bottom:16px;
+    display:flex;align-items:center;gap:10px;
   }
+  .eyebrow:before{content:'';width:26px;height:1.5px;background:var(--amber);opacity:.6}
   h1{
-    font-size:44px;
-    font-weight:400;
-    line-height:1.15;
-    letter-spacing:-.01em;
+    font-family:var(--serif);
+    font-size:clamp(32px,5.2vw,52px);
+    font-weight:600;line-height:1.08;letter-spacing:-.02em;
+    max-width:20ch;
   }
-  h1 b{color:var(--accent);font-weight:700}
-  header .sub{
-    margin-top:18px;
-    color:var(--muted);
-    max-width:640px;
-    font-size:17.5px;
+  h1 b{
+    font-weight:700;color:var(--accent);position:relative;white-space:nowrap;
   }
-  header .points{
-    margin-top:20px;
-    max-width:700px;
-    list-style:none;
+  h1 b:after{
+    content:'';position:absolute;left:0;right:0;bottom:.08em;height:.28em;
+    background:var(--accent-soft);z-index:-1;border-radius:2px;
   }
-  header .points li{
+
+  .points{margin-top:26px;max-width:660px;list-style:none;display:grid;gap:13px}
+  .points li{
+    position:relative;padding-left:30px;color:var(--muted);
+    font-size:16px;line-height:1.55;
+  }
+  .points li .n{
+    position:absolute;left:0;top:1px;
+    width:20px;height:20px;border-radius:6px;
+    background:var(--accent-soft);color:var(--accent);
+    font-family:var(--mono);font-size:10.5px;font-weight:500;
+    display:grid;place-items:center;
+  }
+  .points li b{color:var(--ink);font-weight:600}
+  .points li i{
+    font-style:normal;color:var(--ink);font-weight:500;
+    box-shadow:inset 0 -7px 0 var(--amber-soft);
+  }
+
+  .meta{
+    margin-top:26px;display:flex;flex-wrap:wrap;gap:8px;
+  }
+  .chip{
+    font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+    color:var(--muted);background:var(--paper-2);
+    border:1px solid var(--line);border-radius:20px;padding:5px 12px;
+  }
+  .chip b{color:var(--ink);font-weight:500}
+  .chip.live{color:var(--green);border-color:color-mix(in srgb,var(--green) 35%,transparent)}
+  .chip.live i{
+    display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:var(--green);margin-right:6px;vertical-align:middle;
+    animation:pulse 2s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  /* ============ SIX BLOCKS ============ */
+  .six{
+    position:relative;z-index:1;margin:44px 0 0;
+    border:1px solid var(--line);border-radius:var(--r);
+    background:var(--paper-2);overflow:hidden;box-shadow:var(--shadow-sm);
+  }
+  .six-head{
+    display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+    padding:16px 20px;border-bottom:1px solid var(--line-soft);
+  }
+  .six-head h2{
+    font-family:var(--serif);font-size:17px;font-weight:600;letter-spacing:-.01em;
+  }
+  .six-head .hint{
+    margin-left:auto;font-family:var(--mono);font-size:10.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--muted);
+  }
+  .six-grid{
+    display:grid;grid-template-columns:repeat(6,1fr);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .blk{
+    border-right:1px solid var(--line-soft);
+    padding:18px 12px;text-align:center;cursor:pointer;
+    background:transparent;font-family:inherit;color:inherit;
+    transition:background .2s, transform .2s;
     position:relative;
-    padding-left:22px;
-    margin-bottom:10px;
-    color:var(--muted);
-    font-size:16.5px;
-    line-height:1.55;
   }
-  header .points li:last-child{margin-bottom:0}
-  header .points li::before{
-    content:'';
-    position:absolute;
-    left:0;top:11px;
-    width:7px;height:7px;
-    border-radius:50%;
-    background:var(--accent);
+  .blk:last-child{border-right:none}
+  .blk:hover,.blk.on{background:var(--paper-3)}
+  .blk:after{
+    content:'';position:absolute;left:0;right:0;bottom:0;height:2.5px;
+    background:var(--c,var(--accent));transform:scaleX(0);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1);
   }
-  header .points li b{color:var(--ink);font-weight:700}
-  header .points li i{
-    font-style:normal;
-    color:var(--ink);
-    border-bottom:1.5px solid var(--amber-soft);
-    box-shadow:inset 0 -6px 0 var(--amber-soft);
+  .blk:hover:after,.blk.on:after{transform:scaleX(1)}
+  .blk .g{
+    width:34px;height:34px;margin:0 auto 8px;border-radius:9px;
+    display:grid;place-items:center;font-size:16px;
+    background:var(--cs);color:var(--c);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1);
   }
-  header .meta{
-    margin-top:20px;
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--muted);
-    letter-spacing:.06em;
+  .blk:hover .g,.blk.on .g{transform:translateY(-2px) scale(1.08)}
+  .blk .nm{font-size:12.5px;font-weight:600;letter-spacing:-.005em}
+  .blk .ct{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:2px}
+
+  .six-panel{padding:18px 20px;display:flex;gap:16px;align-items:flex-start;min-height:96px}
+  .six-panel .bar{width:3px;align-self:stretch;border-radius:3px;background:var(--c,var(--accent));flex:none;transition:background .25s}
+  .six-panel .txt{flex:1;min-width:0}
+  .six-panel h3{
+    font-family:var(--serif);font-size:18px;font-weight:600;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:5px;
   }
-  header .meta span{margin-right:18px}
-  header .meta b{color:var(--ink)}
+  .six-panel h3 em{
+    font-style:normal;font-family:var(--mono);font-size:10px;letter-spacing:.09em;
+    text-transform:uppercase;color:var(--c,var(--accent));
+    background:var(--cs,var(--accent-soft));padding:3px 8px;border-radius:20px;
+  }
+  .six-panel p{color:var(--muted);font-size:14.8px;line-height:1.55;max-width:74ch}
+  .six-panel .go{
+    display:inline-flex;align-items:center;gap:6px;margin-top:9px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--accent);cursor:pointer;background:none;border:none;padding:0;
+  }
+  .six-panel .go span{transition:transform .2s}
+  .six-panel .go:hover span{transform:translateX(4px)}
+  .fadein{animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 
   /* ============ SEARCH ============ */
-  .searchbar{
-    margin:36px 0 12px;
-    position:relative;
-  }
+  main{position:relative;z-index:1;padding:38px 0 72px}
+  .searchbar{position:relative;margin-bottom:12px}
   .searchbar input{
-    width:100%;
-    font-family:Georgia,serif;
-    font-size:16px;
-    padding:14px 18px 14px 46px;
-    border:1.5px solid var(--line);
-    border-radius:12px;
-    background:#fff;
-    color:var(--ink);
-    transition:border-color .15s, box-shadow .15s;
+    width:100%;font-family:var(--sans);font-size:15.5px;
+    padding:15px 96px 15px 48px;
+    border:1.5px solid var(--line);border-radius:14px;
+    background:var(--paper-2);color:var(--ink);
+    transition:border-color .18s, box-shadow .18s;
   }
   .searchbar input:focus{
-    outline:none;
-    border-color:var(--accent);
+    outline:none;border-color:var(--accent);
     box-shadow:0 0 0 4px var(--accent-soft);
   }
-  .searchbar svg{
-    position:absolute;
-    left:16px;top:50%;
-    transform:translateY(-50%);
-    width:20px;height:20px;
-    color:var(--muted);
-    pointer-events:none;
+  .searchbar input::placeholder{color:var(--muted);opacity:.75}
+  .s-ico{position:absolute;left:17px;top:50%;transform:translateY(-50%);width:19px;height:19px;color:var(--muted);pointer-events:none}
+  .kbd{
+    position:absolute;right:16px;top:50%;transform:translateY(-50%);
+    font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    border:1px solid var(--line);border-radius:6px;padding:3px 7px;
+    background:var(--paper-3);pointer-events:none;transition:opacity .15s;
   }
+  .clearbtn{
+    position:absolute;right:14px;top:50%;transform:translateY(-50%);
+    width:26px;height:26px;border-radius:50%;border:none;cursor:pointer;
+    background:var(--paper-3);color:var(--muted);display:none;place-items:center;font-size:15px;line-height:1;
+  }
+  .clearbtn:hover{background:var(--accent-soft);color:var(--accent)}
+  .clearbtn.show{display:grid}
+  .kbd.hide{opacity:0}
+
+  .controls{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    margin-bottom:22px;font-family:var(--mono);font-size:11.5px;color:var(--muted);flex-wrap:wrap;
+  }
+  .controls b{color:var(--ink);font-weight:500}
+  .controls .btns{display:flex;gap:6px}
+  .controls button{
+    background:var(--paper-2);border:1px solid var(--line);
+    font-family:var(--mono);font-size:10.5px;color:var(--muted);
+    cursor:pointer;letter-spacing:.07em;text-transform:uppercase;
+    padding:6px 11px;border-radius:8px;transition:all .16s;
+  }
+  .controls button:hover{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+
   .empty-msg{
-    display:none;
-    text-align:center;
-    color:var(--muted);
-    font-style:italic;
-    padding:36px 20px;
+    display:none;text-align:center;color:var(--muted);
+    padding:48px 20px;border:1px dashed var(--line);border-radius:var(--r);
   }
   .empty-msg.show{display:block}
+  .empty-msg b{display:block;font-family:var(--serif);font-size:19px;color:var(--ink);margin-bottom:6px}
 
-  /* ============ SECTIONS ============ */
-  main{padding:32px 0 64px}
-  .kicker{
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--accent);
-    letter-spacing:.12em;
-    text-transform:uppercase;
-    margin:24px 0 12px;
-  }
-
+  /* ============ CATEGORY CARDS ============ */
+  #cats{display:grid;gap:12px}
   .cat{
     border:1px solid var(--line);
-    background:#fff;
-    border-radius:14px;
-    margin-bottom:14px;
+    background:var(--paper-2);
+    border-radius:var(--r);
     overflow:hidden;
-    transition:box-shadow .2s, border-color .2s;
+    transition:box-shadow .25s, border-color .25s, transform .25s;
+    opacity:0;transform:translateY(14px);
   }
-  .cat:hover{border-color:#D6CCC1;box-shadow:0 3px 12px rgba(35,31,28,.05)}
-  .cat.open{border-color:var(--accent);box-shadow:0 4px 18px rgba(199,67,31,.10)}
+  .cat.in{opacity:1;transform:none}
+  .cat:hover{border-color:color-mix(in srgb,var(--c,var(--accent)) 45%,var(--line));box-shadow:var(--shadow-md)}
+  .cat.open{border-color:var(--c,var(--accent));box-shadow:var(--shadow-md)}
 
   .cat-head{
-    width:100%;
-    display:flex;
-    align-items:center;
-    gap:18px;
-    padding:20px 22px;
-    background:transparent;
-    border:none;
-    cursor:pointer;
-    text-align:left;
-    font-family:inherit;
-    color:inherit;
-    transition:background .15s;
+    width:100%;display:flex;align-items:center;gap:16px;
+    padding:18px 20px;background:transparent;border:none;cursor:pointer;
+    text-align:left;font-family:inherit;color:inherit;transition:background .18s;
   }
-  .cat-head:hover{background:var(--paper)}
-  .cat-head:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+  .cat-head:hover{background:var(--paper-3)}
+  .cat-head:focus-visible{outline:2px solid var(--accent);outline-offset:-3px}
 
   .icon{
-    width:44px;height:44px;
-    flex-shrink:0;
-    border-radius:10px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-size:22px;
+    width:44px;height:44px;flex:none;border-radius:12px;
+    display:grid;place-items:center;font-size:20px;
+    background:var(--cs);color:var(--c);
+    transition:transform .3s cubic-bezier(.2,.8,.2,1);
   }
-  .icon.db     {background:var(--blue-soft);   color:var(--blue)}
-  .icon.cache  {background:var(--red-soft);    color:var(--red)}
-  .icon.scale  {background:var(--green-soft);  color:var(--green)}
-  .icon.deleg  {background:var(--amber-soft);  color:var(--amber)}
-  .icon.conc   {background:var(--purple-soft); color:var(--purple)}
-  .icon.comm   {background:var(--teal-soft);   color:var(--teal)}
-  .icon.micro  {background:var(--accent-soft); color:var(--accent)}
-  .icon.cloud  {background:#EAEDF3;            color:#4A5A7A}
-  .icon.devops {background:#E1EEF7;            color:#1F6FB6}
+  .cat:hover .icon{transform:rotate(-6deg) scale(1.07)}
+  .cat.open .icon{transform:rotate(0) scale(1)}
 
   .cat-title{flex:1;min-width:0}
   .cat-title h2{
-    font-size:22px;
-    font-weight:700;
-    line-height:1.25;
-    margin:0;
-    letter-spacing:-.005em;
+    font-family:var(--serif);font-size:20px;font-weight:600;
+    line-height:1.25;letter-spacing:-.01em;
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;
   }
-  .cat-title p{
-    font-size:14.5px;
-    color:var(--muted);
-    margin:4px 0 0;
-    line-height:1.45;
-  }
+  .cat-title p{font-size:13.8px;color:var(--muted);margin-top:3px;line-height:1.45}
   .cat-count{
-    font-family:var(--mono);
-    font-size:11px;
-    letter-spacing:.08em;
-    text-transform:uppercase;
-    color:var(--muted);
-    background:var(--code);
-    padding:4px 10px;
-    border-radius:20px;
-    flex-shrink:0;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+    color:var(--c);background:var(--cs);padding:4px 10px;border-radius:20px;flex:none;
   }
-  .cat.open .cat-count{background:var(--accent-soft);color:var(--accent)}
+  .chev{width:20px;height:20px;flex:none;color:var(--muted);transition:transform .3s cubic-bezier(.2,.8,.2,1),color .2s}
+  .cat.open .chev{transform:rotate(180deg);color:var(--c)}
 
-  .chev{
-    width:22px;height:22px;
-    flex-shrink:0;
-    color:var(--muted);
-    transition:transform .25s ease, color .2s;
-  }
-  .cat.open .chev{transform:rotate(180deg);color:var(--accent)}
-
-  /* body */
-  .cat-body{
-    max-height:0;
-    overflow:hidden;
-    transition:max-height .3s ease;
-  }
-  .cat.open .cat-body{max-height:2000px}
-  .cat-body-inner{
-    padding:4px 22px 20px 84px;
-    border-top:1px dashed var(--line);
-    margin-top:-1px;
-  }
-  @media (max-width:600px){
-    .cat-body-inner{padding-left:22px}
-  }
+  .cat-body{height:0;overflow:hidden;transition:height .32s cubic-bezier(.2,.8,.2,1)}
+  .cat-body-inner{padding:2px 20px 18px 80px;border-top:1px dashed var(--line-soft)}
+  @media (max-width:640px){.cat-body-inner{padding-left:20px}}
 
   .doc{
-    display:flex;
-    align-items:flex-start;
-    gap:14px;
-    padding:14px 0;
-    border-bottom:1px dotted var(--line);
-    color:var(--ink);
-    transition:transform .15s;
+    display:flex;align-items:flex-start;gap:13px;
+    padding:14px 12px 14px 0;border-bottom:1px dotted var(--line);
+    color:var(--ink);border-radius:10px;
+    transition:transform .18s, background .18s, padding .18s;
   }
-  .doc:last-child{border-bottom:none;padding-bottom:6px}
-  .doc:hover{transform:translateX(4px)}
+  .doc:last-child{border-bottom:none;padding-bottom:4px}
+  .doc:hover{transform:translateX(6px);background:var(--paper-3);padding-left:10px}
   .doc .dot{
-    width:8px;height:8px;
-    border-radius:50%;
-    background:var(--accent);
-    margin-top:9px;
-    flex-shrink:0;
-    transition:transform .15s;
+    width:7px;height:7px;border-radius:50%;background:var(--c);
+    margin-top:9px;flex:none;transition:transform .18s, box-shadow .18s;
   }
-  .doc:hover .dot{transform:scale(1.3)}
+  .doc:hover .dot{transform:scale(1.5);box-shadow:0 0 0 4px var(--cs)}
   .doc-body{flex:1;min-width:0}
   .doc-title{
-    font-size:16.5px;
-    font-weight:700;
-    line-height:1.35;
-    display:flex;
-    align-items:center;
-    gap:8px;
-    flex-wrap:wrap;
+    font-size:15.8px;font-weight:600;line-height:1.35;
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
   }
   .doc-title .arrow{
-    font-family:var(--mono);
-    font-size:14px;
-    color:var(--accent);
-    opacity:0;
-    transform:translateX(-4px);
-    transition:opacity .15s, transform .15s;
+    font-family:var(--mono);font-size:13px;color:var(--c);
+    opacity:0;transform:translateX(-5px);transition:opacity .18s, transform .18s;
   }
   .doc:hover .doc-title .arrow{opacity:1;transform:translateX(0)}
-  .doc-desc{
-    font-size:14.5px;
-    color:var(--muted);
-    margin-top:3px;
-    line-height:1.5;
+  .doc-desc{font-size:13.8px;color:var(--muted);margin-top:3px;line-height:1.5}
+  .badge{
+    font-family:var(--mono);font-size:9.5px;font-weight:400;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--green);background:var(--green-soft);
+    padding:3px 8px;border-radius:20px;
   }
-  .doc-title .badge{
-    font-family:var(--mono);
-    font-size:10px;
-    font-weight:400;
-    letter-spacing:.1em;
-    text-transform:uppercase;
-    color:var(--green);
-    background:var(--green-soft);
-    padding:2px 8px;
-    border-radius:20px;
-  }
+  mark{background:var(--amber-soft);color:var(--ink);border-radius:3px;padding:0 2px}
 
-  .empty-cat{
-    padding:14px 0 6px;
-    color:var(--muted);
-    font-style:italic;
-    font-size:15px;
+  /* ============ HOVER TOOLTIP ============ */
+  .tip{
+    position:fixed;z-index:200;max-width:330px;
+    background:var(--paper-2);border:1px solid var(--line);
+    border-radius:12px;padding:13px 15px;box-shadow:var(--shadow-lg);
+    opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;
+    transition:opacity .16s ease, transform .16s ease;
   }
-  .empty-cat span{
-    font-family:var(--mono);
-    font-style:normal;
-    font-size:12px;
-    background:var(--code);
-    padding:2px 8px;
-    border-radius:4px;
-    margin-left:6px;
-    color:var(--amber);
+  .tip.show{opacity:1;transform:none}
+  .tip .t-label{
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--c,var(--accent));margin-bottom:5px;display:flex;align-items:center;gap:6px;
   }
+  .tip .t-label:before{content:'';width:6px;height:6px;border-radius:2px;background:var(--c,var(--accent))}
+  .tip p{font-size:13.4px;line-height:1.5;color:var(--muted)}
+  .tip p b{color:var(--ink);font-weight:600}
+  @media (hover:none){.tip{display:none}}
 
-  /* controls under search */
-  .controls{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin-bottom:16px;
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--muted);
-  }
-  .controls button{
-    background:none;
-    border:none;
-    font-family:var(--mono);
-    font-size:12px;
-    color:var(--accent);
-    cursor:pointer;
-    letter-spacing:.06em;
-    text-transform:uppercase;
-    padding:4px 8px;
-    border-radius:4px;
-    transition:background .15s;
-  }
-  .controls button:hover{background:var(--accent-soft)}
-  .controls .count b{color:var(--ink)}
-
-  /* footer */
+  /* ============ FOOTER ============ */
   footer{
-    padding:32px 0 40px;
-    border-top:1px solid var(--line);
-    color:var(--muted);
-    font-size:14px;
+    position:relative;z-index:1;
+    padding:30px 0 44px;border-top:1px solid var(--line);
+    color:var(--muted);font-size:13.5px;
   }
-  footer .wrap{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    flex-wrap:wrap;
-    gap:12px;
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+  footer .mono{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em}
+  .totop{
+    display:inline-flex;align-items:center;gap:7px;cursor:pointer;
+    background:none;border:none;font-family:var(--mono);font-size:11.5px;
+    color:var(--accent);letter-spacing:.05em;
   }
-  footer .mono{font-family:var(--mono);font-size:12px;letter-spacing:.06em}
+  .totop:hover span{transform:translateY(-3px)}
+  .totop span{transition:transform .2s}
 
-  /* responsive */
-  @media (max-width:600px){
-    h1{font-size:32px}
-    header{padding:44px 0 32px}
-    .cat-head{padding:16px 18px;gap:14px}
-    .icon{width:38px;height:38px;font-size:19px}
-    .cat-title h2{font-size:19px}
+  /* ============ RESPONSIVE ============ */
+  @media (max-width:900px){
+    .six-grid{grid-template-columns:repeat(3,1fr)}
+    .blk:nth-child(3n){border-right:none}
+    .blk:nth-child(-n+3){border-bottom:1px solid var(--line-soft)}
+  }
+  @media (max-width:640px){
+    .wrap{padding:0 16px}
+    .topbar-inner{padding:10px 16px}
+    header{padding:36px 0 4px}
+    .logo span{display:none}
+    .six-grid{grid-template-columns:repeat(2,1fr)}
+    .blk{border-right:1px solid var(--line-soft) !important;border-bottom:1px solid var(--line-soft)}
+    .blk:nth-child(2n){border-right:none !important}
+    .six-head .hint{display:none}
+    .cat-head{padding:15px 16px;gap:13px}
+    .icon{width:40px;height:40px;font-size:18px}
+    .cat-title h2{font-size:17.5px}
     .cat-count{display:none}
+    .searchbar input{padding:14px 46px 14px 44px;font-size:15px}
+    .kbd{display:none}
+    .points li{font-size:15.3px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+    .cat{opacity:1;transform:none}
   }
 </style>
 </head>
 <body>
+<div class="glow"></div>
+
+<div class="topbar" id="topbar">
+  <div class="topbar-inner">
+    <div class="logo">
+      <div class="logo-mark">S</div>
+      <div>
+        <b>System Design</b>
+        <span>by Purusottam</span>
+      </div>
+    </div>
+    <button class="iconbtn" id="searchJump" title="Search (press /)" aria-label="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </button>
+    <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+      <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </div>
+  <div class="progress" id="progress"></div>
+</div>
 
 <header><div class="wrap">
-  <div class="eyebrow">A personal library · Notes &amp; implementations by Purusottam</div>
-  <h1>Any scalable system is <b>six building blocks</b></h1>
+  <div class="eyebrow">A personal library · Notes &amp; implementations</div>
+  <h1><b>System Design</b> by Purusottam</h1>
+
   <ul class="points">
-    <li><b>System design is really just six components.</b> <i>Database</i>, <i>Caching</i>, <i>Scaling</i>, <i>Delegation</i>, <i>Concurrency</i> and <i>Communication</i> — keep these in mind and you can build Instagram, Tinder, WhatsApp or Uber, and scale it almost without limit.</li>
-    <li><b>Once designed, you ship it.</b> Package the services with Docker and Kubernetes and run them on the cloud of your choice — AWS, GCP or Azure — and let the provider handle the infrastructure underneath.</li>
-    <li><b>Want each concept in depth?</b> Work through the sections below — one area at a time, internals first, then a hands-on Spring Boot implementation.</li>
+    <li><span class="n">1</span><b>System design is really just six components.</b> <i>Database</i>, <i>Caching</i>, <i>Scaling</i>, <i>Delegation</i>, <i>Concurrency</i> and <i>Communication</i> — keep these in mind and you can build Instagram, Tinder, WhatsApp or Uber, and scale it almost without limit.</li>
+    <li><span class="n">2</span><b>Once designed, you ship it.</b> Package the services with Docker and Kubernetes and run them on the cloud of your choice — AWS, GCP or Azure — and let the provider handle the infrastructure underneath.</li>
+    <li><span class="n">3</span><b>Want each concept in depth?</b> Work through the sections below — one area at a time, internals first, then a hands-on Spring Boot implementation.</li>
   </ul>
+
   <div class="meta">
-    <span>Updated <b>August 2026</b></span>
-    <span><b id="stat-cats">9</b> categories</span>
-    <span><b id="stat-docs">12</b> guides · more soon</span>
+    <span class="chip live"><i></i>Updated <b>August 2026</b></span>
+    <span class="chip"><b id="stat-cats">9</b> categories</span>
+    <span class="chip"><b id="stat-docs">12</b> guides</span>
+    <span class="chip">Spring Boot · Java</span>
   </div>
+
+  <!-- ============ SIX BLOCKS ============ -->
+  <section class="six" id="six">
+    <div class="six-head">
+      <h2>The six building blocks</h2>
+      <span class="hint">Hover a block to see what it solves</span>
+    </div>
+    <div class="six-grid" id="sixGrid"></div>
+    <div class="six-panel" id="sixPanel"></div>
+  </section>
 </div></header>
 
 <main><div class="wrap">
 
   <div class="searchbar">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="7"></circle>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
-    <input id="searchInput" type="text" placeholder="Search for a topic — Kafka, MongoDB, HTTP/2, virtual threads, sharding…" autocomplete="off" spellcheck="false">
+    <svg class="s-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input id="searchInput" type="text" placeholder="Search a topic — Kafka, MongoDB, HTTP/2, virtual threads, sharding…" autocomplete="off" spellcheck="false">
+    <span class="kbd" id="kbd">/</span>
+    <button class="clearbtn" id="clearBtn" aria-label="Clear search">×</button>
   </div>
 
   <div class="controls">
-    <span class="count">Showing <b id="visibleCount">9</b> of 9 categories</span>
-    <span>
-      <button onclick="expandAll()">Expand all</button>
-      <button onclick="collapseAll()">Collapse all</button>
+    <span class="count">Showing <b id="visibleCount">9</b> of 9 categories · <b id="docCount">12</b> guides</span>
+    <span class="btns">
+      <button id="expandBtn">Expand all</button>
+      <button id="collapseBtn">Collapse all</button>
     </span>
   </div>
 
-  <div class="kicker">Browse by area</div>
-
-  <div id="empty" class="empty-msg">No topics match your search. Try a different word.</div>
+  <div id="empty" class="empty-msg"><b>Nothing found</b>Try a different word — or clear the search to see all nine areas.</div>
 
   <div id="cats">
-    <!-- ============ DATABASE ============ -->
-    <div class="cat" data-name="Database" data-keywords="database db mongodb dynamodb sql nosql cassandra storage internals sharding replication">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon db">◆</div>
+
+    <!-- DATABASE -->
+    <div class="cat" id="c-database" style="--c:var(--blue);--cs:var(--blue-soft)"
+         data-name="Database"
+         data-tip="Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold — and how fast you can find any single row inside it."
+         data-keywords="database db mongodb dynamodb sql nosql cassandra storage internals sharding replication wiredtiger partition key gsi single table design">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">◆</div>
         <div class="cat-title">
           <h2>Database</h2>
           <p>Storage engines, indexing, sharding, replication, transactions — how databases really work under the hood.</p>
         </div>
         <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/mongodb-internals-and-spring-boot-implementation" target="_blank" rel="noopener">
@@ -446,16 +543,19 @@
       </div></div>
     </div>
 
-    <!-- ============ CACHING ============ -->
-    <div class="cat" data-name="Caching" data-keywords="caching cache redis memcached cdn ttl eviction lru pub/sub streams geo search">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon cache">◉</div>
+    <!-- CACHING -->
+    <div class="cat" id="c-caching" style="--c:var(--red);--cs:var(--red-soft)"
+         data-name="Caching"
+         data-tip="The cheapest request is the one that never reaches your database. Caches trade a little staleness for a lot of latency — the hard part is deciding when to invalidate."
+         data-keywords="caching cache redis memcached cdn ttl eviction lru pub/sub streams geo search cache-aside write-through">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">◉</div>
         <div class="cat-title">
           <h2>Caching</h2>
           <p>Redis, CDN edges, cache-aside vs write-through, invalidation strategies, and how caches change latency budgets.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/Redis-Internals-and-spring-boot-implementation/" target="_blank" rel="noopener">
@@ -468,16 +568,19 @@
       </div></div>
     </div>
 
-    <!-- ============ SCALING ============ -->
-    <div class="cat" data-name="Scaling" data-keywords="scaling horizontal vertical load balancer sharding partitioning capacity amazon ecommerce e-commerce flash sale skip locked concurrency 100m users system design">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon scale">▲</div>
+    <!-- SCALING -->
+    <div class="cat" id="c-scaling" style="--c:var(--green);--cs:var(--green-soft)"
+         data-name="Scaling"
+         data-tip="One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial — and P99 latency into the number you actually defend."
+         data-keywords="scaling horizontal vertical load balancer sharding partitioning capacity amazon ecommerce e-commerce flash sale skip locked 100m users p99 latency system design">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">▲</div>
         <div class="cat-title">
           <h2>Scaling</h2>
           <p>Horizontal vs vertical scaling, load balancers, partitioning, capacity planning, and the P99 latency mindset.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/amazon-system-design/" target="_blank" rel="noopener">
@@ -490,16 +593,19 @@
       </div></div>
     </div>
 
-    <!-- ============ DELEGATION ============ -->
-    <div class="cat" data-name="Delegation" data-keywords="delegation messaging queue kafka rabbitmq event streaming pub sub broker">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon deleg">↯</div>
+    <!-- DELEGATION -->
+    <div class="cat" id="c-delegation" style="--c:var(--amber);--cs:var(--amber-soft)"
+         data-name="Delegation"
+         data-tip="Not everything belongs in the request path. Queues and event logs hand slow work to a broker, so the user gets an answer now and the rest happens reliably later."
+         data-keywords="delegation messaging queue kafka rabbitmq event streaming pub sub broker consumer group exactly once dlt schema registry outbox">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">↯</div>
         <div class="cat-title">
           <h2>Delegation</h2>
           <p>Message brokers, event streaming, task queues — offloading work from the request path to keep systems fast and decoupled.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/apache-kafka-internals-and-spring-boot-implementation" target="_blank" rel="noopener">
@@ -512,16 +618,19 @@
       </div></div>
     </div>
 
-    <!-- ============ CONCURRENCY ============ -->
-    <div class="cat" data-name="Concurrency" data-keywords="concurrency threads locks synchronization race conditions parallelism multithreading multiprocessing virtual threads java 21 platform threads carrier thread executorservice thread pool deadlock livelock starvation volatile atomic cas compare and swap jmm happens-before memory model context switch false sharing cpu cache cores forkjoin structured concurrency pinning instagram flipkart uber tinder phonepe hotstar bookmyshow">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon conc">∞</div>
+    <!-- CONCURRENCY -->
+    <div class="cat" id="c-concurrency" style="--c:var(--purple);--cs:var(--purple-soft)"
+         data-name="Concurrency"
+         data-tip="Thousands of requests touching the same row at once. Threads, locks and atomics are what decide whether that's an accurate inventory count or a very expensive bug."
+         data-keywords="concurrency threads locks synchronization race conditions parallelism multithreading multiprocessing virtual threads java 21 platform threads carrier thread executorservice thread pool deadlock livelock starvation volatile atomic cas jmm happens-before memory model context switch false sharing forkjoin structured concurrency pinning instagram flipkart uber tinder phonepe hotstar bookmyshow">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">∞</div>
         <div class="cat-title">
           <h2>Concurrency</h2>
           <p>Threads, locks, atomics, race conditions, and the JVM concurrency primitives every backend engineer runs into.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/multithreading/" target="_blank" rel="noopener">
@@ -534,16 +643,19 @@
       </div></div>
     </div>
 
-    <!-- ============ COMMUNICATION ============ -->
-    <div class="cat" data-name="Communication" data-keywords="communication rest grpc graphql http websockets protocols apis network ip tcp udp tls ssl https http2 http/2 http3 http/3 quic dns kafka rabbitmq amqp handshake multiplexing head-of-line blocking connection pooling framing mtls sync async instagram whatsapp paypal amazon">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon comm">⇄</div>
+    <!-- COMMUNICATION -->
+    <div class="cat" id="c-communication" style="--c:var(--teal);--cs:var(--teal-soft)"
+         data-name="Communication"
+         data-tip="How the pieces actually talk. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming and debuggability differently — and picking wrong shows up in your P99."
+         data-keywords="communication rest grpc graphql http websockets protocols apis network ip tcp udp tls ssl https http2 http/2 http3 http/3 quic dns kafka rabbitmq amqp handshake multiplexing head-of-line blocking connection pooling framing mtls sync async instagram whatsapp paypal amazon">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">⇄</div>
         <div class="cat-title">
           <h2>Communication</h2>
           <p>REST, gRPC, GraphQL, WebSockets — how services talk, and when each protocol is the right choice.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/network-protocols/" target="_blank" rel="noopener">
@@ -556,16 +668,19 @@
       </div></div>
     </div>
 
-    <!-- ============ MICROSERVICES ============ -->
-    <div class="cat" data-name="Microservices" data-keywords="microservices patterns saga circuit breaker service discovery kubernetes design spring boot dependency injection ioc auto-configuration spring mvc jpa aop transactions caching resiliency retry rate limiter kafka rabbitmq spring security actuator amazon instagram youtube whatsapp">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon micro">▦</div>
+    <!-- MICROSERVICES -->
+    <div class="cat" id="c-microservices" style="--c:var(--accent);--cs:var(--accent-soft)"
+         data-name="Microservices"
+         data-tip="Where the six components become deployable units. Clear boundaries, own data, own failure modes — held together by sagas, circuit breakers and the outbox pattern."
+         data-keywords="microservices patterns saga circuit breaker service discovery kubernetes design spring boot dependency injection ioc auto-configuration spring mvc jpa aop transactions caching resiliency retry rate limiter kafka rabbitmq spring security actuator outbox amazon instagram youtube whatsapp">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">▦</div>
         <div class="cat-title">
           <h2>Microservices</h2>
           <p>Design patterns for splitting a system into services — sagas, circuit breakers, discovery, outbox — and when NOT to.</p>
         </div>
         <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/Microservices-Design-Pattern/" target="_blank" rel="noopener">
@@ -585,16 +700,19 @@
       </div></div>
     </div>
 
-    <!-- ============ DOCKER & KUBERNETES ============ -->
-    <div class="cat" data-name="Docker &amp; Kubernetes" data-keywords="docker kubernetes k8s containers pods deployments services helm ingress orchestration devops shopkart ecommerce dockerfile compose eks alb aws hpa autoscaling probes statefulset rbac networkpolicy gitops service mesh big billion day flash sale">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon devops">⎈</div>
+    <!-- DOCKER & KUBERNETES -->
+    <div class="cat" id="c-devops" style="--c:var(--sky);--cs:var(--sky-soft)"
+         data-name="Docker &amp; Kubernetes"
+         data-tip="Packaging once and running it the same way everywhere. Pods, deployments, ingress, probes and autoscaling are what turn a design into something that survives a flash sale."
+         data-keywords="docker kubernetes k8s containers pods deployments services helm ingress orchestration devops shopkart ecommerce dockerfile compose eks alb aws hpa autoscaling probes statefulset rbac networkpolicy gitops service mesh big billion day flash sale">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">⎈</div>
         <div class="cat-title">
           <h2>Docker &amp; Kubernetes</h2>
           <p>Containers, images, pods, deployments, services, and ingress — packaging apps once and running them the same way everywhere.</p>
         </div>
         <span class="cat-count">1 guide</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/Docker-Kubernetes/" target="_blank" rel="noopener">
@@ -607,16 +725,19 @@
       </div></div>
     </div>
 
-    <!-- ============ CLOUD ============ -->
-    <div class="cat" data-name="Cloud (AWS &amp; Azure)" data-keywords="cloud aws azure ec2 s3 lambda vpc iam terraform devops infrastructure rds dynamodb sqs sns kinesis msk kms cloudwatch xray eks ecs cloudfront route53 zomato spring boot 4 java 25">
-      <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
-        <div class="icon cloud">☁</div>
+    <!-- CLOUD -->
+    <div class="cat" id="c-cloud" style="--c:var(--slate);--cs:var(--slate-soft)"
+         data-name="Cloud (AWS &amp; Azure)"
+         data-tip="Someone else runs the hardware. Managed databases, queues, secrets, identity and observability let you operate a system instead of babysitting servers."
+         data-keywords="cloud aws azure gcp ec2 s3 lambda vpc iam terraform devops infrastructure rds dynamodb sqs sns kinesis msk kms cloudwatch xray eks ecs cloudfront route53 zomato spring boot 4 java 25">
+      <button class="cat-head" aria-expanded="false">
+        <div class="icon">☁</div>
         <div class="cat-title">
           <h2>Cloud (AWS &amp; Azure)</h2>
           <p>Core services, networking, IAM, cost, and infrastructure-as-code — for engineers who ship on the two big clouds.</p>
         </div>
         <span class="cat-count">2 guides</span>
-        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
         <a class="doc" href="https://purusottam11.github.io/AWS-spring-boot/" target="_blank" rel="noopener">
@@ -637,89 +758,326 @@
     </div>
 
   </div>
-
 </div></main>
 
 <footer><div class="wrap">
   <span>© 2026 · Purusottam Mohapatra</span>
-  <span class="mono">Built for learners · Notes are living documents</span>
+  <span class="mono">Notes are living documents</span>
+  <button class="totop" id="toTop"><span>↑</span> Back to top</button>
 </div></footer>
 
+<div class="tip" id="tip" role="tooltip">
+  <div class="t-label" id="tipLabel"></div>
+  <p id="tipText"></p>
+</div>
+
 <script>
-  // ============ ACCORDION ============
-  function toggle(head){
-    const cat = head.parentElement;
-    const wasOpen = cat.classList.contains('open');
-    cat.classList.toggle('open');
-    head.setAttribute('aria-expanded', String(!wasOpen));
+(function(){
+  'use strict';
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ================= THEME ================= */
+  const root = document.documentElement;
+  const themeBtn = document.getElementById('themeBtn');
+  const sunPath = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  const moonPath = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+
+  function store(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function read(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+
+  function setTheme(t){
+    root.dataset.theme = t;
+    document.getElementById('themeIcon').innerHTML = t === 'dark' ? moonPath : sunPath;
+    store('sd-theme', t);
+  }
+  const saved = read('sd-theme');
+  setTheme(saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  themeBtn.addEventListener('click', () => setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+  /* ================= SIX BLOCKS ================= */
+  const BLOCKS = [
+    { id:'c-database', glyph:'◆', name:'Database', tag:'Store',
+      c:'--blue', cs:'--blue-soft',
+      text:'Where the truth lives. Storage engines, indexes, replicas and shards decide how much data you can hold and how quickly you can find a single row in it. Get the partition key wrong here and no amount of caching saves you later.' },
+    { id:'c-caching', glyph:'◉', name:'Caching', tag:'Skip work',
+      c:'--red', cs:'--red-soft',
+      text:'The cheapest request is the one that never reaches your database. Redis and CDN edges cut reads from tens of milliseconds to under one — the real engineering is deciding how stale is acceptable and when to invalidate.' },
+    { id:'c-scaling', glyph:'▲', name:'Scaling', tag:'Add capacity',
+      c:'--green', cs:'--green-soft',
+      text:'One machine always runs out. Load balancers, partitioning and horizontal replicas turn a fixed ceiling into a dial you can turn — and shift the conversation from average latency to the P99 you actually have to defend.' },
+    { id:'c-delegation', glyph:'↯', name:'Delegation', tag:'Do it later',
+      c:'--amber', cs:'--amber-soft',
+      text:'Not everything belongs in the request path. Queues and event logs hand slow work to a broker, so the user gets an answer in milliseconds while emails, invoices and analytics happen reliably afterwards.' },
+    { id:'c-concurrency', glyph:'∞', name:'Concurrency', tag:'Share safely',
+      c:'--purple', cs:'--purple-soft',
+      text:'Thousands of requests touching the same row at the same instant. Threads, locks, atomics and the memory model decide whether that is an accurate inventory count or the most expensive bug of the quarter.' },
+    { id:'c-communication', glyph:'⇄', name:'Communication', tag:'Talk',
+      c:'--teal', cs:'--teal-soft',
+      text:'How the pieces actually talk to each other. TCP, TLS, HTTP/2, gRPC and WebSockets each trade latency, streaming ability and debuggability differently — and choosing wrong quietly shows up in your tail latency.' }
+  ];
+
+  const grid = document.getElementById('sixGrid');
+  const panel = document.getElementById('sixPanel');
+  const counts = {};
+  document.querySelectorAll('.cat').forEach(c => {
+    counts[c.id] = c.querySelectorAll('.doc').length;
+  });
+
+  grid.innerHTML = BLOCKS.map((b,i) => `
+    <button class="blk${i===0?' on':''}" data-i="${i}" style="--c:var(${b.c});--cs:var(${b.cs})">
+      <div class="g">${b.glyph}</div>
+      <div class="nm">${b.name}</div>
+      <div class="ct">${counts[b.id] || 0} guide${counts[b.id]===1?'':'s'}</div>
+    </button>`).join('');
+
+  let activeBlock = 0, hoverTimer = null;
+
+  function paintPanel(i){
+    const b = BLOCKS[i];
+    panel.style.setProperty('--c', `var(${b.c})`);
+    panel.style.setProperty('--cs', `var(${b.cs})`);
+    panel.innerHTML = `
+      <div class="bar"></div>
+      <div class="txt fadein">
+        <h3>${b.name} <em>${b.tag}</em></h3>
+        <p>${b.text}</p>
+        <button class="go" data-goto="${b.id}">Open ${b.name} guides <span>→</span></button>
+      </div>`;
+  }
+  paintPanel(0);
+
+  function selectBlock(i){
+    if (i === activeBlock) return;
+    activeBlock = i;
+    grid.querySelectorAll('.blk').forEach((el,k) => el.classList.toggle('on', k === i));
+    paintPanel(i);
   }
 
-  function expandAll(){
-    document.querySelectorAll('.cat').forEach(c => {
-      if (c.style.display !== 'none') {
-        c.classList.add('open');
-        c.querySelector('.cat-head').setAttribute('aria-expanded','true');
-      }
-    });
-  }
-  function collapseAll(){
-    document.querySelectorAll('.cat').forEach(c => {
-      c.classList.remove('open');
-      c.querySelector('.cat-head').setAttribute('aria-expanded','false');
-    });
+  grid.addEventListener('mouseover', e => {
+    const b = e.target.closest('.blk'); if (!b) return;
+    clearTimeout(hoverTimer);
+    hoverTimer = setTimeout(() => selectBlock(+b.dataset.i), 60);
+  });
+  grid.addEventListener('click', e => {
+    const b = e.target.closest('.blk'); if (!b) return;
+    selectBlock(+b.dataset.i);
+  });
+  panel.addEventListener('click', e => {
+    const go = e.target.closest('[data-goto]'); if (!go) return;
+    jumpTo(go.dataset.goto);
+  });
+
+  function jumpTo(id){
+    const cat = document.getElementById(id); if (!cat) return;
+    openCat(cat, true);
+    const y = cat.getBoundingClientRect().top + window.scrollY - 76;
+    window.scrollTo({ top:y, behavior: reduced ? 'auto' : 'smooth' });
+    cat.animate(
+      [{ boxShadow:'0 0 0 0 var(--cs)' }, { boxShadow:'0 0 0 8px var(--cs)' }, { boxShadow:'0 0 0 0 var(--cs)' }],
+      { duration:1100, easing:'ease-out' }
+    );
   }
 
-  // ============ SEARCH ============
+  /* ================= ACCORDION ================= */
+  const cats = [...document.querySelectorAll('.cat')];
+
+  function openCat(cat, force){
+    const body = cat.querySelector('.cat-body');
+    const head = cat.querySelector('.cat-head');
+    const isOpen = cat.classList.contains('open');
+    if (isOpen && force) return;
+    if (isOpen){
+      body.style.height = body.scrollHeight + 'px';
+      requestAnimationFrame(() => { body.style.height = '0px'; });
+      cat.classList.remove('open');
+      head.setAttribute('aria-expanded','false');
+    } else {
+      cat.classList.add('open');
+      head.setAttribute('aria-expanded','true');
+      body.style.height = body.scrollHeight + 'px';
+      body.addEventListener('transitionend', function done(ev){
+        if (ev.propertyName !== 'height') return;
+        if (cat.classList.contains('open')) body.style.height = 'auto';
+        body.removeEventListener('transitionend', done);
+      });
+    }
+  }
+
+  cats.forEach(cat => {
+    cat.querySelector('.cat-head').addEventListener('click', () => openCat(cat));
+  });
+
+  document.getElementById('expandBtn').addEventListener('click', () => {
+    cats.forEach(c => { if (c.style.display !== 'none') openCat(c, true); });
+  });
+  document.getElementById('collapseBtn').addEventListener('click', () => {
+    cats.forEach(c => { if (c.classList.contains('open')) openCat(c); });
+  });
+
+  /* ================= HOVER TOOLTIP ================= */
+  const tip = document.getElementById('tip');
+  const tipLabel = document.getElementById('tipLabel');
+  const tipText = document.getElementById('tipText');
+  let tipOn = false;
+
+  function showTip(el, label, text, color, soft){
+    tipLabel.textContent = label;
+    tipText.textContent = text;
+    tip.style.setProperty('--c', color);
+    tip.classList.add('show');
+    tipOn = true;
+  }
+  function hideTip(){ tip.classList.remove('show'); tipOn = false; }
+
+  function place(e){
+    if (!tipOn) return;
+    const pad = 14, w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = e.clientX + 18, y = e.clientY + 18;
+    if (x + w + pad > window.innerWidth)  x = e.clientX - w - 18;
+    if (y + h + pad > window.innerHeight) y = e.clientY - h - 18;
+    tip.style.left = Math.max(pad, x) + 'px';
+    tip.style.top  = Math.max(pad, y) + 'px';
+  }
+
+  cats.forEach(cat => {
+    const head = cat.querySelector('.cat-head');
+    const name = cat.dataset.name.replace('&amp;','&');
+    const color = getComputedStyle(cat).getPropertyValue('--c');
+    head.addEventListener('mouseenter', e => {
+      if (window.matchMedia('(hover:none)').matches) return;
+      showTip(head, name, cat.dataset.tip, color);
+      place(e);
+    });
+    head.addEventListener('mousemove', place);
+    head.addEventListener('mouseleave', hideTip);
+  });
+  window.addEventListener('scroll', () => { if (tipOn) hideTip(); }, { passive:true });
+
+  /* ================= SEARCH ================= */
   const input = document.getElementById('searchInput');
-  const cats = document.querySelectorAll('.cat');
   const empty = document.getElementById('empty');
   const visibleCount = document.getElementById('visibleCount');
+  const docCount = document.getElementById('docCount');
+  const clearBtn = document.getElementById('clearBtn');
+  const kbd = document.getElementById('kbd');
 
-  function normalize(s){ return (s || '').toLowerCase().trim(); }
+  // snapshot original markup so highlighting is reversible
+  const marks = [...document.querySelectorAll('.doc-title, .doc-desc, .cat-title h2, .cat-title p')];
+  marks.forEach(el => el.dataset.orig = el.innerHTML);
+
+  const norm = s => (s || '').toLowerCase().trim();
+  const esc  = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  function highlight(q){
+    marks.forEach(el => {
+      const orig = el.dataset.orig;
+      if (!q){ el.innerHTML = orig; return; }
+      // only replace inside text nodes, never inside tags
+      el.innerHTML = orig.replace(
+        new RegExp('(?![^<]*>)(' + esc(q) + ')', 'gi'),
+        '<mark>$1</mark>'
+      );
+    });
+  }
 
   function runSearch(){
-    const q = normalize(input.value);
-    let shown = 0;
+    const q = norm(input.value);
+    let shownCats = 0, shownDocs = 0;
 
     cats.forEach(cat => {
-      const name = normalize(cat.dataset.name);
-      const keywords = normalize(cat.dataset.keywords);
-      // also match against inner doc titles/descriptions
-      const inner = normalize(cat.querySelector('.cat-body-inner').innerText);
-
-      const matches = !q || name.includes(q) || keywords.includes(q) || inner.includes(q);
-
-      if (matches){
-        cat.style.display = '';
-        shown++;
-        // auto-expand on non-empty search so the match is visible
-        if (q){
-          cat.classList.add('open');
-          cat.querySelector('.cat-head').setAttribute('aria-expanded','true');
-        }
-      } else {
-        cat.style.display = 'none';
+      const hay = norm(cat.dataset.name + ' ' + cat.dataset.keywords + ' ' +
+                       cat.dataset.tip + ' ' + cat.querySelector('.cat-body-inner').textContent);
+      const hit = !q || hay.includes(q);
+      cat.style.display = hit ? '' : 'none';
+      if (hit){
+        shownCats++;
+        shownDocs += cat.querySelectorAll('.doc').length;
+        if (q) openCat(cat, true);
+      } else if (cat.classList.contains('open')){
         cat.classList.remove('open');
+        cat.querySelector('.cat-body').style.height = '0px';
         cat.querySelector('.cat-head').setAttribute('aria-expanded','false');
       }
     });
 
-    visibleCount.textContent = shown;
-    empty.classList.toggle('show', shown === 0);
+    highlight(q);
+    visibleCount.textContent = shownCats;
+    docCount.textContent = shownDocs;
+    empty.classList.toggle('show', shownCats === 0);
+    clearBtn.classList.toggle('show', !!q);
+    kbd.classList.toggle('hide', !!q);
+
+    // re-measure open bodies after highlight changes their height
+    cats.forEach(c => {
+      if (c.classList.contains('open') && c.style.display !== 'none'){
+        c.querySelector('.cat-body').style.height = 'auto';
+      }
+    });
   }
 
-  input.addEventListener('input', runSearch);
-
-  // Clear search with Escape
+  let t;
+  input.addEventListener('input', () => { clearTimeout(t); t = setTimeout(runSearch, 90); });
   input.addEventListener('keydown', e => {
     if (e.key === 'Escape'){ input.value = ''; runSearch(); input.blur(); }
   });
+  clearBtn.addEventListener('click', () => { input.value = ''; runSearch(); input.focus(); });
 
-  // ============ STATS ============
+  function focusSearch(){
+    input.scrollIntoView({ block:'center', behavior: reduced ? 'auto' : 'smooth' });
+    setTimeout(() => input.focus(), reduced ? 0 : 260);
+  }
+  document.getElementById('searchJump').addEventListener('click', focusSearch);
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement !== input && !e.metaKey && !e.ctrlKey){
+      e.preventDefault(); focusSearch();
+    }
+  });
+
+  /* ================= SCROLL FX ================= */
+  const topbar = document.getElementById('topbar');
+  const progress = document.getElementById('progress');
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      topbar.classList.toggle('stuck', y > 8);
+      const h = document.body.scrollHeight - window.innerHeight;
+      progress.style.width = (h > 0 ? (y / h) * 100 : 0) + '%';
+      ticking = false;
+    });
+  }, { passive:true });
+
+  if ('IntersectionObserver' in window && !reduced){
+    const io = new IntersectionObserver((entries, obs) => {
+      entries.forEach((en, i) => {
+        if (en.isIntersecting){
+          setTimeout(() => en.target.classList.add('in'), i * 55);
+          obs.unobserve(en.target);
+        }
+      });
+    }, { rootMargin:'0px 0px -40px 0px', threshold:.06 });
+    cats.forEach(c => io.observe(c));
+  } else {
+    cats.forEach(c => c.classList.add('in'));
+  }
+
+  document.getElementById('toTop').addEventListener('click', () => {
+    window.scrollTo({ top:0, behavior: reduced ? 'auto' : 'smooth' });
+  });
+
+  /* ================= STATS + DEEP LINK ================= */
   document.getElementById('stat-cats').textContent = cats.length;
-  const totalDocs = document.querySelectorAll('.doc').length;
-  document.getElementById('stat-docs').textContent = totalDocs;
-</script>
+  document.getElementById('stat-docs').textContent = document.querySelectorAll('.doc').length;
 
+  if (location.hash){
+    const target = document.querySelector(location.hash);
+    if (target && target.classList.contains('cat')){
+      setTimeout(() => jumpTo(target.id), 200);
+    }
+  }
+})();
+</script>
 </body>
 </html>

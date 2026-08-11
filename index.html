@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>System Design by Purusottam</title>
-<meta name="description" content="A curated library of system design notes — databases, caching, scaling, messaging, concurrency, microservices, cloud — with Spring Boot implementations.">
+<meta name="description" content="Any scalable system is six building blocks — database, caching, scaling, delegation, concurrency and communication — implemented as microservices, deployed with Docker and Kubernetes, and run on AWS or Azure. Deep-dive notes with Spring Boot implementations.">
 <style>
   :root{
     --paper:#FBF8F5;
@@ -63,6 +63,35 @@
     color:var(--muted);
     max-width:640px;
     font-size:17.5px;
+  }
+  header .points{
+    margin-top:20px;
+    max-width:700px;
+    list-style:none;
+  }
+  header .points li{
+    position:relative;
+    padding-left:22px;
+    margin-bottom:10px;
+    color:var(--muted);
+    font-size:16.5px;
+    line-height:1.55;
+  }
+  header .points li:last-child{margin-bottom:0}
+  header .points li::before{
+    content:'';
+    position:absolute;
+    left:0;top:11px;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--accent);
+  }
+  header .points li b{color:var(--ink);font-weight:700}
+  header .points li i{
+    font-style:normal;
+    color:var(--ink);
+    border-bottom:1.5px solid var(--amber-soft);
+    box-shadow:inset 0 -6px 0 var(--amber-soft);
   }
   header .meta{
     margin-top:20px;
@@ -351,13 +380,17 @@
 <body>
 
 <header><div class="wrap">
-  <div class="eyebrow">A personal library · Notes &amp; implementations</div>
-  <h1><b>System Design</b> by Purusottam</h1>
-  <p class="sub">A growing collection of deep-dive notes on the concepts real backend systems are built on — from database internals to distributed messaging — each paired with a hands-on Spring Boot implementation.</p>
+  <div class="eyebrow">A personal library · Notes &amp; implementations by Purusottam</div>
+  <h1>Any scalable system is <b>six building blocks</b></h1>
+  <ul class="points">
+    <li>Almost every high-scale system — Amazon, Instagram, WhatsApp, Uber — is the same six concepts recombined: <i>Database</i>, <i>Caching</i>, <i>Scaling</i>, <i>Delegation</i>, <i>Concurrency</i> and <i>Communication</i>. Get these right and you can design nearly anything on a whiteboard.</li>
+    <li>Those six get <b>implemented as microservices</b>, <b>packaged and deployed with Docker &amp; Kubernetes</b>, and <b>run and maintained on the cloud</b> — AWS or Azure. That's the layer that separates a senior engineer from someone who only knows the theory.</li>
+    <li>Every guide here takes one piece of that picture, explains the internals first, then pairs it with a hands-on <b>Spring Boot</b> implementation.</li>
+  </ul>
   <div class="meta">
     <span>Updated <b>August 2026</b></span>
     <span><b id="stat-cats">9</b> categories</span>
-    <span><b id="stat-docs">11</b> guides · more soon</span>
+    <span><b id="stat-docs">12</b> guides · more soon</span>
   </div>
 </div></header>
 
@@ -368,7 +401,7 @@
       <circle cx="11" cy="11" r="7"></circle>
       <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
     </svg>
-    <input id="searchInput" type="text" placeholder="Search for a topic — Kafka, MongoDB, virtual threads, sharding…" autocomplete="off" spellcheck="false">
+    <input id="searchInput" type="text" placeholder="Search for a topic — Kafka, MongoDB, HTTP/2, virtual threads, sharding…" autocomplete="off" spellcheck="false">
   </div>
 
   <div class="controls">
@@ -502,18 +535,24 @@
     </div>
 
     <!-- ============ COMMUNICATION ============ -->
-    <div class="cat" data-name="Communication" data-keywords="communication rest grpc graphql http websockets protocols apis">
+    <div class="cat" data-name="Communication" data-keywords="communication rest grpc graphql http websockets protocols apis network ip tcp udp tls ssl https http2 http/2 http3 http/3 quic dns kafka rabbitmq amqp handshake multiplexing head-of-line blocking connection pooling framing mtls sync async instagram whatsapp paypal amazon">
       <button class="cat-head" onclick="toggle(this)" aria-expanded="false">
         <div class="icon comm">⇄</div>
         <div class="cat-title">
           <h2>Communication</h2>
           <p>REST, gRPC, GraphQL, WebSockets — how services talk, and when each protocol is the right choice.</p>
         </div>
-        <span class="cat-count">Coming soon</span>
+        <span class="cat-count">1 guide</span>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
       </button>
       <div class="cat-body"><div class="cat-body-inner">
-        <div class="empty-cat">Guides for this area are on the way. <span>WIP</span></div>
+        <a class="doc" href="https://purusottam11.github.io/network-protocols/" target="_blank" rel="noopener">
+          <div class="dot"></div>
+          <div class="doc-body">
+            <div class="doc-title">Network Protocols — From the Wire to Spring Boot <span class="arrow">→</span> <span class="badge">New</span></div>
+            <div class="doc-desc">Two tabs, 21 diagrams — IP, TCP, UDP, TLS 1.3, HTTP/2, HTTP/3 + QUIC, WebSockets, DNS, gRPC, Kafka and RabbitMQ traced through Instagram, WhatsApp, PayPal and Amazon — then connection handling, frame processing and multiplexing implemented in Spring Boot.</div>
+          </div>
+        </a>
       </div></div>
     </div>
 

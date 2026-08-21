@@ -474,6 +474,7 @@ footer{margin-top:110px;border-top:1px solid var(--stroke);padding:44px 0 56px}
 <style id="guideStyles">
 /* ══════════════ COMPILED GUIDES — each scoped to #g-<slug> ══════════════ */
 .guide{display:none;padding:74px 0 90px}
+.guide [id]{scroll-margin-top:86px}
 .guide.on{display:block}
 /* passthrough: each guide already centres itself with its own .wrap/.shell/.layout
    (960px–1560px). Clamping here squeezed the wide sidebar grids off-centre. */
@@ -24934,7 +24935,7 @@ kubectl set image deployment/order-service order-service=$ECR/order-service:$SHA
 
 
 </div></section>
-<section class="guide" id="g-azure" data-area="cloud" data-title="AWS for backend engineers — scaling Zomato with Spring Boot 4"><div class="guide-inner">
+<section class="guide" id="g-azure" data-area="cloud" data-title="Azure for backend engineers — scaling Zomato with Spring Boot 4"><div class="guide-inner">
 
 <header><div class="wrap">
   <div class="eyebrow">A learning journey · beginner → advanced · one food-delivery app throughout</div>
@@ -26966,7 +26967,7 @@ addEventListener('keydown', e=>{
 
 
 /* ═══════ IN-PAGE ROUTER — guides live in this document, no navigation ═══════ */
-const SLUG = {"sql":{"area":"database","title":"SQL, End to End — Internals & Spring Boot"},"mongodb": {"area": "database", "title": "MongoDB with Real Systems \u2014 Simple Guide"}, "dynamodb": {"area": "database", "title": "DynamoDB with Real Systems \u2014 Simple Guide"}, "redis": {"area": "caching", "title": "Redis Enterprise Cloud \u2014 A Beginner's Guide"}, "amazon": {"area": "scaling", "title": "Building Amazon \u2014 the story of every architecture decision, from day zero to 100 million users"}, "kafka": {"area": "delegation", "title": "Kafka with Real Systems \u2014 Simple Guide"}, "threads": {"area": "concurrency", "title": "Multithreading, Visually \u2014 from Instagram's feed to a million virtual threads"}, "protocols": {"area": "communication", "title": "Network Protocols &amp; Spring Boot \u2014 Interview Field Guide"}, "patterns": {"area": "microservices", "title": "From Monolith to Microservices \u2014 Why, Not Just How"}, "springboot": {"area": "microservices", "title": "Spring Boot \u2014 Core Components, Explained with Amazon, Instagram, YouTube &amp; WhatsApp"}, "k8s": {"area": "devops", "title": "Docker &amp; Kubernetes \u2014 beginner to advanced, with a Spring Boot e-commerce platform"}, "aws": {"area": "cloud", "title": "AWS for backend engineers \u2014 scaling Zomato with Spring Boot 4"}, "azure": {"area": "cloud", "title": "AWS for backend engineers \u2014 scaling Zomato with Spring Boot 4"}};
+const SLUG = {"sql":{"area":"database","title":"SQL, End to End — Internals & Spring Boot"},"mongodb": {"area": "database", "title": "MongoDB with Real Systems \u2014 Simple Guide"}, "dynamodb": {"area": "database", "title": "DynamoDB with Real Systems \u2014 Simple Guide"}, "redis": {"area": "caching", "title": "Redis Enterprise Cloud \u2014 A Beginner's Guide"}, "amazon": {"area": "scaling", "title": "Building Amazon \u2014 the story of every architecture decision, from day zero to 100 million users"}, "kafka": {"area": "delegation", "title": "Kafka with Real Systems \u2014 Simple Guide"}, "threads": {"area": "concurrency", "title": "Multithreading, Visually \u2014 from Instagram's feed to a million virtual threads"}, "protocols": {"area": "communication", "title": "Network Protocols &amp; Spring Boot \u2014 Interview Field Guide"}, "patterns": {"area": "microservices", "title": "From Monolith to Microservices \u2014 Why, Not Just How"}, "springboot": {"area": "microservices", "title": "Spring Boot \u2014 Core Components, Explained with Amazon, Instagram, YouTube &amp; WhatsApp"}, "k8s": {"area": "devops", "title": "Docker &amp; Kubernetes \u2014 beginner to advanced, with a Spring Boot e-commerce platform"}, "aws": {"area": "cloud", "title": "AWS for backend engineers \u2014 scaling Zomato with Spring Boot 4"}, "azure": {"area": "cloud", "title": "Azure for backend engineers \u2014 scaling Zomato with Spring Boot 4"}};
 const byId = {}; ALL.forEach(c => byId[c.id] = c);
 window.__shellTheme = function(){
   setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
@@ -26976,7 +26977,7 @@ const homeEl  = document.getElementById('home');
 const gTop    = document.getElementById('gTop');
 const gChip   = document.getElementById('gChip');
 const gName   = document.getElementById('gName');
-let   openSlug = null, homeScroll = 0;
+let   openSlug = null, homeScroll = 0, pushDepth = 0;
 
 function syncGuideTheme(){
   const i = document.getElementById('gThemeIcon');
@@ -27009,7 +27010,7 @@ function showGuide(slug, push){
   // guides were display:none while their scripts ran — let them re-measure
   requestAnimationFrame(()=>{ dispatchEvent(new Event('resize')); dispatchEvent(new Event('scroll')); });
 
-  if(push !== false){ try{ history.pushState({guide:slug}, '', '#' + slug); }catch(e){} }
+  if(push !== false){ try{ history.pushState({guide:slug}, '', '#' + slug); pushDepth++; }catch(e){} }
   document.title = (meta.title ? meta.title + ' · ' : '') + 'System Design by Purusottam';
 }
 
@@ -27019,16 +27020,36 @@ function showHome(push){
   homeEl.style.display = '';
   openSlug = null;
   window.scrollTo({top: homeScroll, behavior:'auto'});
-  if(push !== false){ try{ history.pushState({}, '', location.pathname + location.search); }catch(e){} }
+  if(push !== false){ try{ history.pushState({}, '', location.pathname + location.search); pushDepth++; }catch(e){} }
   document.title = 'System Design by Purusottam';
 }
 
-document.getElementById('gBack').onclick = () => history.length > 1 ? history.back() : showHome();
+document.getElementById('gBack').onclick = () => { if(pushDepth > 0) history.back(); else showHome(); };
 document.getElementById('gTheme').onclick = () => {
   setTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
   syncGuideTheme();
 };
 
+/* how far the sticky reader pill intrudes at the top of the viewport */
+const ANCHOR_OFFSET = 86;
+
+/* which guide (if any) physically contains a given element id */
+function ownerSlug(id){
+  const el = document.getElementById(id);
+  if(!el) return null;
+  const sec = el.closest('.guide');
+  return sec ? sec.id.replace(/^g-/, '') : null;
+}
+
+function scrollToAnchor(id, smooth){
+  const t = document.getElementById(id);
+  if(!t) return false;
+  const y = t.getBoundingClientRect().top + window.scrollY - ANCHOR_OFFSET;
+  window.scrollTo({top: Math.max(0, y), behavior: (smooth && !reduced) ? 'smooth' : 'auto'});
+  return true;
+}
+
+/* library card -> open the embedded guide */
 document.addEventListener('click', e => {
   const a = e.target.closest('a[data-slug]');
   if(!a) return;
@@ -27036,15 +27057,60 @@ document.addEventListener('click', e => {
   showGuide(a.dataset.slug);
 });
 
-addEventListener('popstate', e => {
-  const s = e.state && e.state.guide;
-  s ? showGuide(s, false) : showHome(false);
+/* every other in-page hash link. Handled manually so the browser never
+   performs a fragment navigation, which is what used to fire the stray
+   popstate that reset the router back to the library. */
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[href]');
+  if(!a || a.hasAttribute('data-slug')) return;
+  if(a.target && a.target !== '' && a.target !== '_self') return;
+  const raw = a.getAttribute('href') || '';
+  if(raw.charAt(0) !== '#') return;
+
+  e.preventDefault();
+  const id = decodeURIComponent(raw.slice(1));
+  if(!id) return;                                  // bare "#" — swallow it
+
+  if(SLUG[id]){ showGuide(id); return; }           // #kafka etc. = whole guide
+
+  const owner = ownerSlug(id);
+  if(owner && owner !== openSlug) showGuide(owner);
+
+  if(scrollToAnchor(id, true)){
+    // replaceState, NOT pushState: keeps Back meaning "leave the guide"
+    try{ history.replaceState(history.state, '', '#' + id); }catch(_){}
+  }
 });
 
-// deep link on first load: #kafka, #protocols, …
+addEventListener('popstate', e => {
+  pushDepth = Math.max(0, pushDepth - 1);
+  const st = e.state || {};
+  if(st.guide){ showGuide(st.guide, false); return; }
+
+  const hash = decodeURIComponent((location.hash || '').replace('#',''));
+  if(hash){
+    if(SLUG[hash]){ showGuide(hash, false); return; }
+    const owner = ownerSlug(hash);
+    if(owner){
+      if(owner !== openSlug) showGuide(owner, false);
+      scrollToAnchor(hash, false);
+      return;
+    }
+    if(openSlug) return;            // unknown hash mid-read: stay put
+  }
+  showHome(false);
+});
+
+// deep link on first load: #kafka, #protocols, #springboot__c5, …
 (function(){
-  const h = location.hash.replace('#','');
-  if(h && SLUG[h]) showGuide(h, false);
+  const h = decodeURIComponent((location.hash || '').replace('#',''));
+  if(!h) return;
+  if(SLUG[h]){ showGuide(h, false); return; }
+  const owner = ownerSlug(h);
+  if(owner){
+    showGuide(owner, false);
+    setTimeout(() => scrollToAnchor(h, false), 80);
+  }
 })();
 
 /* ═══════ SCROLL + COUNTERS ═══════ */
@@ -27552,8 +27618,7 @@ var _qs=function(s){return ROOT.querySelector(s)},_qsa=function(s){return ROOT.q
 
 /* ── theme, nav, progress, copy ── */
 const html=document.documentElement,tBtn=document.getElementById('threads__themeBtn');
-const saved=(()=>{try{return localStorage.getItem('viz-theme')}catch(e){return null}})();
-if(saved)html.setAttribute('data-theme',saved);
+/* load-time theme restore removed — the shell owns the theme */
 tBtn.onclick=()=>{const n=html.getAttribute('data-theme')==='dark'?'light':'dark';
   html.setAttribute('data-theme',n);try{localStorage.setItem('viz-theme',n)}catch(e){}};
 const side=document.getElementById('threads__side'),mBtn=document.getElementById('threads__menuBtn');
@@ -27817,7 +27882,7 @@ let currentTab = 'proto';
 function renderNav(tab){
   sideNav.innerHTML = NAV[tab].map(([group, items]) =>
     `<div class="nav-group">${group}</div>` +
-    items.map(([id,label]) => `<a href="#${id}" data-id="${id}"><span class="dot"></span>${label}</a>`).join('')
+    items.map(([id,label]) => `<a href="#protocols__${id}" data-id="protocols__${id}"><span class="dot"></span>${label}</a>`).join('')
   ).join('');
   attachSpy();
 }
@@ -27827,7 +27892,7 @@ _qsa('.tab-btn').forEach(btn => {
     currentTab = btn.dataset.tab;
     _qsa('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     _qsa('.tab-panel').forEach(p =>
-      p.classList.toggle('active', p.id === 'panel-' + currentTab));
+      p.classList.toggle('active', p.id === 'protocols__panel-' + currentTab));
     renderNav(currentTab);
     window.scrollTo({top:0, behavior:'instant'});
   });
@@ -27908,13 +27973,7 @@ var ROOT=document.getElementById('g-springboot');
 if(!ROOT)return;
 var _qs=function(s){return ROOT.querySelector(s)},_qsa=function(s){return ROOT.querySelectorAll(s)};
 
-(function(){
-  var saved = localStorage.getItem('sbg-theme');
-  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  if (saved === 'dark' || (!saved && prefersDark)) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
-})();
+/* load-time theme restore removed — the shell owns the theme */
 
 ;
 
@@ -27949,13 +28008,7 @@ var _qs=function(s){return ROOT.querySelector(s)},_qsa=function(s){return ROOT.q
 document.getElementById('springboot__theme-toggle').addEventListener('click', () => {
   const root = document.documentElement;
   const isDark = root.getAttribute('data-theme') === 'dark';
-  if (isDark) {
-    root.removeAttribute('data-theme');
-    localStorage.setItem('sbg-theme', 'light');
-  } else {
-    root.setAttribute('data-theme', 'dark');
-    localStorage.setItem('sbg-theme', 'dark');
-  }
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
 });
 
 // ---- reading progress bar ----
@@ -28008,9 +28061,8 @@ function toggleTheme(){
   applyTheme(next);
 }
 (function(){
-  let t = null;
-  try{ t = localStorage.getItem('ssg-theme'); }catch(e){}
-  if(!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  let t = 'dark';
+  try{ t = localStorage.getItem('sd-theme') === 'light' ? 'light' : 'dark'; }catch(e){}
   applyTheme(t);
 })();
 
@@ -28043,9 +28095,8 @@ function toggleTheme(){
   applyTheme(next);
 }
 (function(){
-  let t = null;
-  try{ t = localStorage.getItem('ssg-theme'); }catch(e){}
-  if(!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  let t = 'dark';
+  try{ t = localStorage.getItem('sd-theme') === 'light' ? 'light' : 'dark'; }catch(e){}
   applyTheme(t);
 })();
 
@@ -28078,9 +28129,8 @@ function toggleTheme(){
   applyTheme(next);
 }
 (function(){
-  let t = null;
-  try{ t = localStorage.getItem('ssg-theme'); }catch(e){}
-  if(!t) t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  let t = 'dark';
+  try{ t = localStorage.getItem('sd-theme') === 'light' ? 'light' : 'dark'; }catch(e){}
   applyTheme(t);
 })();
 
@@ -28117,7 +28167,7 @@ let tab = 'core', io = null;
 function renderNav(t){
   side.innerHTML = NAV[t].map(([grp, items]) =>
     `<div class="nav-group">${grp}</div>` +
-    items.map(([id,n,label]) => `<a href="#${id}" data-id="${id}"><span class="num">${n}</span>${label}</a>`).join('')
+    items.map(([id,n,label]) => `<a href="#sql__${id}" data-id="sql__${id}"><span class="num">${n}</span>${label}</a>`).join('')
   ).join('');
   spy();
 }
@@ -28139,14 +28189,14 @@ _qsa('.tab-btn').forEach(btn => {
     tab = btn.dataset.tab;
     _qsa('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
     _qsa('.tab-panel').forEach(p =>
-      p.classList.toggle('active', p.id === 'panel-' + tab));
+      p.classList.toggle('active', p.id === 'sql__panel-' + tab));
     renderNav(tab);
     window.scrollTo({top:0, behavior:'instant'});
   });
 });
 
 const root = document.documentElement;
-try { const t = localStorage.getItem('sql-theme'); if (t) root.dataset.theme = t; } catch(e){}
+/* load-time theme restore removed — the shell owns the theme */
 document.getElementById('sql__themeBtn').addEventListener('click', () => {
   root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
   try { localStorage.setItem('sql-theme', root.dataset.theme); } catch(e){}
@@ -28177,6 +28227,34 @@ if (window.Prism) Prism.highlightAll();
 })();
 
 
+})();
+</script>
+<script>/* ── theme sync: the shell owns data-theme ── */
+(function(){
+  var root = document.documentElement;
+  var SUN  = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>';
+  var MOON = '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+  function icons(t){
+    ['themeIcon','gThemeIcon','rThemeIcon'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.innerHTML = (t === 'dark' ? MOON : SUN);
+    });
+  }
+  var saved = 'dark';
+  try{ saved = (localStorage.getItem('sd-theme') === 'light') ? 'light' : 'dark'; }catch(e){}
+  root.setAttribute('data-theme', saved);
+  icons(saved);
+
+  var busy = false;
+  new MutationObserver(function(){
+    if(busy) return;
+    busy = true;
+    if(!root.getAttribute('data-theme')) root.setAttribute('data-theme','light');
+    var t = root.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+    try{ localStorage.setItem('sd-theme', t); }catch(e){}
+    icons(t);
+    busy = false;
+  }).observe(root, {attributes:true, attributeFilter:['data-theme']});
 })();
 </script>
 </body>
